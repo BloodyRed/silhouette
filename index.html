@@ -155,6 +155,7 @@ h3{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:14px}
 .btn.danger{background:rgba(255,138,122,.12);color:var(--coral);border:1px solid rgba(255,138,122,.3);box-shadow:none}
 .btn.danger:hover{background:rgba(255,138,122,.2);box-shadow:none}
 .btn:disabled{opacity:.5;cursor:default;transform:none}
+.btn.on{background:var(--grad);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(176,124,255,.35)}
 
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
 .row>div{flex:1;min-width:110px}
@@ -497,6 +498,20 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
 
   <div id="sub-mesures" class="subpage">
   <p class="sub">Prends tes mesures toujours au même moment (le matin, à jeun) et au même endroit du corps. Chaque mesure peut porter sa propre note.</p>
+
+  <div style="margin-bottom:14px">
+    <button type="button" class="btn ghost small" id="body-map-btn" onclick="toggleBodyMap()" style="display:inline-flex;align-items:center;gap:7px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="15" height="15"><circle cx="12" cy="5" r="2.6"/><path d="M12 8.5c-3 0-4.5 1.8-4.5 4.5M12 8.5c3 0 4.5 1.8 4.5 4.5M12 8.5V15m0 0-2.5 6.5M12 15l2.5 6.5"/></svg>
+      Aperçu corporel
+    </button>
+  </div>
+
+  <div class="card" id="body-map-card" style="margin-bottom:16px;display:none">
+    <div class="eyebrow" id="body-map-title">Aperçu corporel</div>
+    <div id="body-map"></div>
+    <p class="meta" style="margin-top:8px">Touche une mesure sur la silhouette pour voir son évolution complète. Variations par rapport à la séance précédente.</p>
+    <div id="body-map-custom" class="mt8"></div>
+  </div>
 
   <div class="card" style="margin-bottom:16px">
     <h3>Nouvelle séance de mesures</h3>
@@ -1293,6 +1308,73 @@ function renderPoids(){
 }
 
 /* ───────────────────────── Mesures ───────────────────────── */
+/* ── Aperçu corporel : silhouette annotée ── */
+const BODY_POINTS={
+  buste:{x:190,y:142,side:"L"},
+  poitrine:{x:190,y:174,side:"R"},
+  bras:{x:121,y:194,side:"L"},
+  taille:{x:190,y:238,side:"R"},
+  fesses:{x:139,y:322,side:"L"},
+  hanches:{x:243,y:312,side:"R"},
+  milieuCuisse:{x:167,y:428,side:"L"},
+  hautCuisse:{x:215,y:382,side:"R"},
+  mollet:{x:168,y:526,side:"L"},
+  genou:{x:211,y:484,side:"R"},
+  cheville:{x:205,y:610,side:"R"}
+};
+const BODY_PATH="M178 88 C172 94 160 95 150 98 C138 102 131 112 129 132 C125 166 120 202 116 236 C112 270 109 302 107 332 C105 352 108 368 113 376 C118 380 122 375 123 366 C124 346 124 338 125 332 C127 302 129 268 132 238 C135 212 140 188 147 166 C144 190 148 214 157 238 C146 266 138 290 136 314 C136 336 143 356 152 376 C160 414 164 452 165 484 C168 508 169 530 167 548 C170 574 174 592 176 610 C176 626 170 637 176 643 L188 643 C190 635 189 621 188 610 C187 572 186 526 185 484 C184 442 185 404 186 376 C188 364 190 356 190 354 C190 356 192 364 194 376 C195 404 196 442 195 484 C194 526 193 572 192 610 C191 621 190 635 192 643 L204 643 C210 637 204 626 204 610 C206 592 210 574 213 548 C211 530 212 508 215 484 C216 452 220 414 228 376 C237 356 244 336 244 314 C242 290 234 266 223 238 C232 214 236 190 233 166 C240 188 245 212 248 238 C251 268 253 302 255 332 C256 338 256 346 257 366 C258 375 262 380 267 376 C272 368 275 352 273 332 C271 302 268 270 264 236 C260 202 255 166 251 132 C249 112 242 102 230 98 C220 95 208 94 202 88 Z";
+function toggleBodyMap(){
+  const c=$("body-map-card");
+  const show=c.style.display==="none";
+  c.style.display=show?"block":"none";
+  $("body-map-btn").classList.toggle("on",show);
+  if(show)renderBodyMap();
+}
+function renderBodyMap(){
+  const el=$("body-map");if(!el)return;
+  const ss=sortedSessions();
+  const last=ss.length?ss[ss.length-1]:null;
+  const prev=ss.length>1?ss[ss.length-2]:null;
+  $("body-map-title").textContent="Aperçu corporel"+(last?" · séance du "+fmtDate(last.date):"");
+  let callouts="";
+  ZONES.forEach(([k,label])=>{
+    const pt=BODY_POINTS[k];if(!pt)return;
+    const v=last&&last.values[k]&&last.values[k].v!=null?last.values[k].v:null;
+    const pv=prev&&prev.values[k]&&prev.values[k].v!=null?prev.values[k].v:null;
+    const L=pt.side==="L";
+    const lx=L?10:370, anchor=L?"start":"end", bend=L?100:280;
+    let dTxt="",dCol="#9A94B8";
+    if(v!=null&&pv!=null){
+      const r=Math.round((v-pv)*10)/10;
+      if(r<0){dTxt="\u25BE \u2212"+Math.abs(r).toLocaleString("fr-FR")+" cm";dCol="#4ADE9E";}
+      else if(r>0){dTxt="\u25B4 +"+r.toLocaleString("fr-FR")+" cm";dCol="#FF8A7A";}
+      else{dTxt="= stable";}
+    }
+    callouts+='<g onclick="openZone(\''+k+'\')" style="cursor:pointer">'+
+      '<polyline points="'+pt.x+','+pt.y+' '+bend+','+pt.y+'" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>'+
+      '<circle cx="'+pt.x+'" cy="'+pt.y+'" r="3.4" fill="#B07CFF" stroke="#F2F0FA" stroke-width="1.2"/>'+
+      '<text x="'+lx+'" y="'+(pt.y-6)+'" text-anchor="'+anchor+'" font-size="10.5" fill="#9A94B8">'+label+'</text>'+
+      '<text x="'+lx+'" y="'+(pt.y+11)+'" text-anchor="'+anchor+'" font-size="15" font-weight="700" fill="#CBB2FF">'+(v!=null?(Math.round(v*10)/10).toLocaleString("fr-FR"):"\u2014")+'</text>'+
+      (dTxt?'<text x="'+lx+'" y="'+(pt.y+25)+'" text-anchor="'+anchor+'" font-size="9.5" font-weight="600" fill="'+dCol+'">'+dTxt+'</text>':"")+
+      '</g>';
+  });
+  el.innerHTML='<svg viewBox="0 0 380 662" style="width:100%;max-width:460px;display:block;margin:0 auto" role="img" aria-label="Silhouette avec mesures corporelles">'+
+    '<defs>'+
+    '<linearGradient id="bmg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF7AA2"/><stop offset="50%" stop-color="#B07CFF"/><stop offset="100%" stop-color="#6C8CFF"/></linearGradient>'+
+    '<pattern id="bwire" width="13" height="13" patternUnits="userSpaceOnUse"><path d="M0 6.5 H13 M6.5 0 V13" stroke="rgba(176,124,255,.16)" stroke-width="1"/></pattern>'+
+    '</defs>'+
+    '<g style="filter:drop-shadow(0 0 14px rgba(176,124,255,.25))">'+
+    '<ellipse cx="190" cy="46" rx="24" ry="28" fill="rgba(124,90,220,.10)" stroke="url(#bmg)" stroke-width="2"/>'+
+    '<path d="M179 66 L178 90 C182 96 198 96 202 90 L201 66 C197 74 183 74 179 66Z" fill="rgba(124,90,220,.10)"/>'+
+    '<path d="'+BODY_PATH+'" fill="rgba(124,90,220,.10)"/>'+
+    '<path d="'+BODY_PATH+'" fill="url(#bwire)" stroke="url(#bmg)" stroke-width="2" stroke-linejoin="round"/>'+
+    '</g>'+callouts+'</svg>';
+  const customs=(D.customZones||[]).map(z=>{
+    const v=last&&last.values[z.id]&&last.values[z.id].v!=null?last.values[z.id].v:null;
+    return'<span class="chip" style="cursor:pointer" onclick="openZone(\''+z.id+'\')">'+esc(z.label)+" "+(v!=null?fmtCm(v):"\u2014")+'</span>';
+  }).join("");
+  $("body-map-custom").innerHTML=customs;
+}
 function renderMeasureForm(){
   const ss=sortedSessions();
   const last=ss.length?ss[ss.length-1]:null;
@@ -1792,7 +1874,7 @@ window.addEventListener("resize",updateNavFade);
 updateNavFade();
 function renderAll(){
   renderDash();renderWeek();renderPoids();renderMeasureForm();renderZones();renderSessions();
-  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();applyDashOrder();
+  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();applyDashOrder();
 }
 load();
 </script>
