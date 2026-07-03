@@ -827,6 +827,7 @@ function cloudErrorHint(e){
 async function cloudCreate(){
   const key=$("cl-key").value.trim();
   if(!key)return toast("Colle d'abord ta clé API jsonbin.io.");
+  if(($("cl-bin").value.trim()||C.binId)&&!confirm("⚠️ Ceci va créer un NOUVEL espace VIDE et remplacer l'identifiant actuel.\n\nPour te connecter à un espace existant qui contient déjà tes données : colle son identifiant, clique « Enregistrer la config », puis « Récupérer ↓ ».\n\nCréer quand même un nouvel espace vide ?"))return;
   setCloudStatus("Création de l'espace en cours…");
   try{
     D.updatedAt=new Date().toISOString();
@@ -835,17 +836,25 @@ async function cloudCreate(){
       body:JSON.stringify(D)});
     const j=await res.json();
     if(!res.ok||!j.metadata||!j.metadata.id)throw new Error(j.message||("HTTP "+res.status));
-    C.apiKey=key;C.binId=j.metadata.id;C.lastSync=new Date().toISOString();
+    C.apiKey=key;C.binId=j.metadata.id;C.lastSync=new Date().toISOString();C.linked=true;
     persistCloudCfg();renderCloud();
     toast("Espace cloud créé ✓ Tes données sont en ligne.");
   }catch(e){setCloudStatus(cloudErrorHint(e),false);}
 }
-function cloudSaveCfg(){
-  C.apiKey=$("cl-key").value.trim();
-  C.binId=$("cl-bin").value.trim();
+async function cloudSaveCfg(){
+  const key=$("cl-key").value.trim();
+  let bin=$("cl-bin").value.trim();
+  if(bin.includes("/"))bin=bin.split("/").filter(Boolean).pop(); // URL collée → on extrait l'identifiant
+  const changed=bin!==C.binId||key!==C.apiKey;
+  C.apiKey=key;C.binId=bin;
+  if(changed)C.linked=false; // synchro auto en pause tant qu'on n'a pas récupéré/envoyé explicitement
   persistCloudCfg();renderCloud();
-  if(cloudConfigured())toast("Configuration cloud enregistrée ✓ Clique sur « Récupérer » pour rapatrier tes données.");
-  else toast("Clé et identifiant enregistrés partiellement — les deux sont nécessaires.");
+  if(!cloudConfigured())return toast("Il faut la clé API ET l'identifiant d'espace.");
+  if(changed&&confirm("Récupérer maintenant les données de cet espace ?\n\n(Recommandé : remplace les données de CET appareil par celles du cloud.)")){
+    await cloudPull(false,true);
+  }else if(changed){
+    toast("Config enregistrée. La synchro auto reste en pause tant que tu n'as pas cliqué « Récupérer ↓ » ou « Envoyer ↑ ».");
+  }else toast("Configuration cloud enregistrée ✓");
 }
 async function cloudPush(silent){
   if(!cloudConfigured()){if(!silent)toast("Configure d'abord le cloud (clé + espace).");return;}
@@ -855,26 +864,28 @@ async function cloudPush(silent){
     const res=await fetch("https://api.jsonbin.io/v3/b/"+C.binId,{method:"PUT",
       headers:{"Content-Type":"application/json","X-Master-Key":C.apiKey},
       body:JSON.stringify(D)});
-    if(!res.ok){const j=await res.json().catch(()=>({}));throw new Error(j.message||("HTTP "+res.status));}
-    C.lastSync=new Date().toISOString();persistCloudCfg();renderCloud();
+    if(!res.ok){const j=await res.json().catch(()=>({}));throw new Error(res.status===404?"espace introuvable (identifiant erroné ?)":res.status===401?"clé API refusée":(j.message||("HTTP "+res.status)));}
+    C.lastSync=new Date().toISOString();C.linked=true;persistCloudCfg();renderCloud();
     if(!silent)toast("Données envoyées dans le cloud ✓");
   }catch(e){if(!silent)setCloudStatus(cloudErrorHint(e),false);}
 }
-async function cloudPull(silent){
+async function cloudPull(silent,force){
   if(!cloudConfigured()){if(!silent)toast("Configure d'abord le cloud (clé + espace).");return;}
   if(!silent)setCloudStatus("Récupération en cours…");
   try{
     const res=await fetch("https://api.jsonbin.io/v3/b/"+C.binId+"/latest",{headers:{"X-Master-Key":C.apiKey}});
-    const j=await res.json();
-    if(!res.ok||!j.record)throw new Error(j.message||("HTTP "+res.status));
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok||!j.record)throw new Error(res.status===404?"espace introuvable — vérifie l'identifiant":res.status===401?"clé API refusée — vérifie la X-Master-Key":(j.message||("HTTP "+res.status)));
     const remote=j.record;
     const remoteT=remote.updatedAt?new Date(remote.updatedAt).getTime():0;
     const localT=D.updatedAt?new Date(D.updatedAt).getTime():0;
-    if(silent&&remoteT<=localT){renderCloud();return;} // rien de plus récent
-    if(!silent&&remoteT<localT&&!confirm("Les données du cloud sont plus anciennes que celles de cet appareil. Les récupérer quand même ?")){renderCloud();return;}
+    if(!force){
+      if(silent&&remoteT<=localT){renderCloud();return;} // rien de plus récent
+      if(!silent&&remoteT<localT&&!confirm("Les données du cloud sont plus anciennes que celles de cet appareil. Les récupérer quand même ?")){renderCloud();return;}
+    }
     D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]},remote);
     saveLocal();
-    C.lastSync=new Date().toISOString();persistCloudCfg();
+    C.lastSync=new Date().toISOString();C.linked=true;persistCloudCfg();
     renderAll();
     if(!silent)toast("Données récupérées depuis le cloud ✓");
   }catch(e){if(!silent)setCloudStatus(cloudErrorHint(e),false);}
@@ -900,7 +911,7 @@ function save(){
   D.updatedAt=new Date().toISOString();
   clearTimeout(saveT);
   saveT=setTimeout(saveLocal,300);
-  if(cloudConfigured()&&C.auto){
+  if(cloudConfigured()&&C.auto&&C.linked!==false){
     clearTimeout(pushT);
     pushT=setTimeout(()=>cloudPush(true),5000);
   }
