@@ -350,7 +350,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
     </div>
     <div>
       <h1>Silhouette</h1>
-      <small>Carnet de progression</small>
+      <small>Carnet de progression · <span id="app-ver" style="color:#CBB2FF;font-weight:600"></span></small>
     </div>
     </div>
     <button type="button" class="gear" id="gear-btn" onclick="showTab('params')" aria-label="Réglages et connexions" title="Réglages &amp; connexions">
@@ -686,6 +686,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <div class="mt">
         <button class="btn danger" onclick="resetAll()">Tout effacer</button>
       </div>
+      <p class="meta mt" id="app-ver-full"></p>
     </div>
   </div>
   </div>
@@ -774,6 +775,8 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
+const APP_VERSION="2.0";
+const APP_BUILD="2026-07-03";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
        weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]};
@@ -1887,6 +1890,8 @@ function renderAll(){
   renderDash();renderWeek();renderPoids();renderMeasureForm();renderZones();renderSessions();
   renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();applyDashOrder();
 }
+document.getElementById("app-ver").textContent="v"+APP_VERSION;
+document.getElementById("app-ver-full").textContent="Silhouette v"+APP_VERSION+" · build du "+APP_BUILD.split("-").reverse().join("/");
 load();
 </script>
 </body>
