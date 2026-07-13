@@ -103,6 +103,22 @@ App Withings : **Profil → Paramètres → Télécharger mes données** → imp
 | `silhouette.html` | L'application complète |
 | `favicon.ico` | Icône navigateur (16/32/48 px) pour l'hébergement |
 | `silhouette-icone-512.png` | Icône haute résolution (PWA, écran d'accueil) |
+| `recettes.json` | Base des suggestions de recettes — éditable librement |
+
+### Personnaliser les recettes (`recettes.json`)
+Placer le fichier **à côté de `index.html`**. S'il est absent (ou en ouverture locale), l'app utilise sa base intégrée. Chaque recette suit ce schéma :
+
+```json
+{
+  "n": "Nom de la recette",
+  "e": "🥘",
+  "t": 30,
+  "i": ["ingrédient 1", "ingrédient 2"],
+  "d": "Préparation en quelques phrases."
+}
+```
+
+`n` = nom · `e` = emoji (optionnel) · `t` = temps en minutes (optionnel) · `i` = ingrédients (mots simples — la correspondance ignore accents et pluriels) · `d` = préparation. Les recettes ajoutées **dans l'app** (« ＋ Ajouter ma propre recette ») sont, elles, stockées avec les données utilisateur et synchronisées dans le cloud.
 
 ## 🗒️ Données
 
