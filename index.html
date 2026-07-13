@@ -247,7 +247,7 @@ svg.chart{width:100%;height:auto;display:block}
 .section{display:none}
 .section.active{display:block;animation:fadein .25s ease}
 @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-dialog{border:1px solid var(--stroke);border-radius:24px;padding:0;max-width:660px;width:92vw;max-height:85vh;background:#191627;color:var(--txt)}
+dialog{margin:auto;border:1px solid var(--stroke);border-radius:24px;padding:0;max-width:660px;width:92vw;max-height:85vh;background:#191627;color:var(--txt)}
 dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
 .dlg-body{padding:24px;overflow-y:auto;max-height:85vh}
 .mt{margin-top:16px}.mt8{margin-top:9px}
@@ -713,6 +713,30 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <p class="meta mt">Idées d'articles adaptés à un régime équilibré : protéines maigres (poulet, poisson blanc, œufs), légumes frais ou surgelés nature, fruits de saison, yaourt grec, légumineuses, flocons d'avoine, oléagineux non salés.</p>
     </div>
   </div>
+
+  <div class="card mt">
+    <h3>🍽️ Idées de recettes avec ta liste</h3>
+    <p class="meta" style="margin-bottom:12px">Suggestions tirées d'une base de recettes équilibrées intégrée, selon les ingrédients de ta liste (à acheter ou déjà cochés). Touche un ingrédient grisé ＋ pour l'ajouter à ta liste.</p>
+    <div id="recipe-list"><p class="empty">Ajoute des ingrédients à ta liste pour voir des idées de recettes.</p></div>
+
+    <div class="eyebrow mt" id="my-recipes-title" style="display:none">Mes recettes</div>
+    <div id="my-recipes"></div>
+
+    <details class="fold mt">
+      <summary>＋ Ajouter ma propre recette</summary>
+      <div class="fold-body">
+        <div class="row">
+          <div><label>Nom</label><input type="text" id="mr-name" placeholder="Gratin de courgettes léger"></div>
+          <div style="max-width:110px"><label>Emoji</label><input type="text" id="mr-emoji" placeholder="🥘" maxlength="4"></div>
+          <div style="max-width:130px"><label>Temps (min)</label><input type="number" id="mr-time" placeholder="30"></div>
+        </div>
+        <div class="mt8"><label>Ingrédients (séparés par des virgules)</label><input type="text" id="mr-ings" placeholder="courgette, oeuf, fromage rapé, lait"></div>
+        <div class="mt8"><label>Préparation</label><textarea id="mr-steps" rows="2" placeholder="Étapes en quelques phrases…"></textarea></div>
+        <button class="btn mt8" onclick="addMyRecipe()">Ajouter la recette</button>
+        <p class="meta mt8">Astuce : tu peux aussi éditer le fichier <b style="color:var(--txt)">recettes.json</b> à côté de ton index.html pour modifier la base de suggestions.</p>
+      </div>
+    </details>
+  </div>
 </section>
 
 </main>
@@ -775,11 +799,11 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.0";
-const APP_BUILD="2026-07-03";
+const APP_VERSION="2.3";
+const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]};
+       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]};
 let storageOK=false;
 
 /* Stockage local : Claude storage → localStorage (hors Claude) → mémoire */
@@ -886,7 +910,7 @@ async function cloudPull(silent,force){
       if(silent&&remoteT<=localT){renderCloud();return;} // rien de plus récent
       if(!silent&&remoteT<localT&&!confirm("Les données du cloud sont plus anciennes que celles de cet appareil. Les récupérer quand même ?")){renderCloud();return;}
     }
-    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]},remote);
+    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]},remote);
     saveLocal();
     C.lastSync=new Date().toISOString();C.linked=true;persistCloudCfg();
     renderAll();
@@ -1717,7 +1741,7 @@ async function hydratePhotos(){
   if(compareSel.length===2)renderCompare();
 }
 
-/* ───────────────────────── Liste de courses / Shopping ───────────────────────── */
+/* ───────────────────────── Liste de courses ───────────────────────── */
 function addShop(){
   const v=$("shop-input").value.trim();
   if(!v)return;
@@ -1748,6 +1772,134 @@ function renderShop(){
   const left=items.filter(x=>!x.done).length,done=items.length-left;
   $("shop-left").textContent=left;
   $("shop-done-lbl").textContent=done?done+" déjà dans le panier ✓":"";
+  renderRecipes();
+}
+
+/* ───────────────────────── Idées de recettes ───────────────────────── */
+let RECIPES=[
+{n:"Bowl poulet-quinoa",e:"🥗",t:25,i:["poulet","quinoa","avocat","tomate","concombre"],d:"Fais griller le poulet en dés, cuis le quinoa, assemble avec les légumes frais, citron et un filet d'huile d'olive."},
+{n:"Saumon rôti au brocoli",e:"🐟",t:20,i:["saumon","brocoli","citron"],d:"Saumon au four 12-15 min à 200 °C avec le brocoli en fleurettes, citron et herbes."},
+{n:"Omelette épinards-feta",e:"🍳",t:10,i:["oeuf","epinard","feta"],d:"Bats 3 œufs, fais tomber les épinards à la poêle, verse les œufs et émiette la feta."},
+{n:"Poêlée dinde-courgettes",e:"🍗",t:20,i:["dinde","courgette","oignon","poivron"],d:"Saisis la dinde en lanières, ajoute les légumes émincés, paprika et un trait de citron."},
+{n:"Salade de lentilles",e:"🥙",t:15,i:["lentille","tomate","oignon","feta","concombre"],d:"Lentilles cuites refroidies, dés de légumes, feta, vinaigrette moutarde légère."},
+{n:"Curry de pois chiches",e:"🍛",t:25,i:["pois chiche","tomate","oignon","lait de coco","riz"],d:"Fais revenir l'oignon, ajoute curry, tomates et pois chiches, mijote 15 min avec le lait de coco, sers sur riz."},
+{n:"Porridge banane-cannelle",e:"🥣",t:8,i:["flocon avoine","banane","lait","cannelle"],d:"Cuis les flocons dans le lait 5 min, ajoute la banane écrasée et la cannelle."},
+{n:"Yaourt grec gourmand",e:"🍓",t:5,i:["yaourt grec","flocon avoine","fruit rouge","miel"],d:"Yaourt grec, flocons, fruits rouges et un filet de miel — parfait au petit-déj ou en collation."},
+{n:"Pâtes complètes au thon",e:"🍝",t:20,i:["pate","thon","tomate","oignon"],d:"Sauce tomate-oignon express, thon égoutté, pâtes complètes al dente."},
+{n:"Buddha bowl patate douce",e:"🍠",t:35,i:["patate douce","quinoa","pois chiche","epinard","avocat"],d:"Patate douce rôtie au four, quinoa, pois chiches grillés, épinards frais et avocat."},
+{n:"Crevettes sautées au riz",e:"🍤",t:15,i:["crevette","riz","brocoli","ail","sauce soja"],d:"Wok : ail, crevettes 3 min, brocoli croquant, sauce soja, sers sur riz."},
+{n:"Poulet rôti haricots verts",e:"🍗",t:30,i:["poulet","haricot vert","ail","citron"],d:"Filets de poulet au four avec ail et citron, haricots verts vapeur."},
+{n:"Chili sin carne",e:"🌶️",t:30,i:["haricot rouge","tomate","oignon","poivron","riz"],d:"Fais revenir oignon et poivron, ajoute tomates, haricots rouges et épices chili, mijote 20 min."},
+{n:"Wrap poulet-avocat",e:"🌯",t:10,i:["tortilla","poulet","avocat","tomate","salade"],d:"Tortilla complète garnie de poulet grillé, avocat écrasé, tomate et salade croquante."},
+{n:"Soupe de légumes maison",e:"🥕",t:30,i:["carotte","poireau","courgette","oignon","pomme de terre"],d:"Fais suer l'oignon, ajoute les légumes en morceaux, couvre d'eau, 20 min, mixe."},
+{n:"Tofu sauté aux légumes",e:"🥦",t:20,i:["tofu","brocoli","carotte","sauce soja","riz"],d:"Tofu doré à la poêle, légumes croquants, sauce soja-gingembre, sers sur riz."},
+{n:"Salade grecque",e:"🥗",t:10,i:["concombre","tomate","feta","olive","oignon"],d:"Gros dés de concombre et tomate, feta, olives, oignon rouge, origan et huile d'olive."},
+{n:"Steak & patate douce",e:"🥩",t:25,i:["boeuf","patate douce","salade"],d:"Steak maigre grillé, frites de patate douce au four, salade verte."},
+{n:"Toast avocat-œuf",e:"🥑",t:10,i:["pain complet","avocat","oeuf","citron"],d:"Pain complet toasté, avocat écrasé au citron, œuf poché ou au plat par-dessus."},
+{n:"Papillote de poisson blanc",e:"🐟",t:25,i:["cabillaud","courgette","tomate","citron"],d:"Poisson en papillote avec courgette, tomate, citron et herbes, 18 min à 190 °C."},
+{n:"Poulet crémeux aux champignons",e:"🍄",t:25,i:["poulet","champignon","creme","oignon"],d:"Poulet saisi, champignons et oignon fondus, déglace et lie avec un peu de crème légère."},
+{n:"Smoothie vert banane",e:"🥤",t:5,i:["banane","epinard","yaourt grec","lait"],d:"Mixe banane, poignée d'épinards, yaourt grec et lait — vitaminé et rassasiant."}
+];
+// Charge recettes.json s'il existe à côté de index.html (remplace la base intégrée)
+fetch("recettes.json",{cache:"no-store"})
+  .then(r=>r.ok?r.json():null)
+  .then(j=>{
+    if(Array.isArray(j)&&j.length&&j[0].n&&Array.isArray(j[0].i)){
+      RECIPES=j;
+      renderRecipes();
+    }
+  }).catch(()=>{}); // fichier absent ou ouverture locale : base intégrée conservée
+function allRecipes(){
+  return RECIPES.map(r=>Object.assign({},r))
+    .concat((D.myRecipes||[]).map(r=>Object.assign({},r,{custom:true})));
+}
+function normTxt(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/s\b/g,"").trim();}
+function ingOwned(ing){
+  const b=normTxt(ing);
+  return(D.shopping||[]).some(it=>{
+    const a=normTxt(it.text);
+    return a.includes(b)||b.includes(a);
+  });
+}
+function addShopNamed(name){
+  (D.shopping=D.shopping||[]).push({id:uid(),text:name,done:false});
+  save();renderShop();
+  toast("« "+name+" » ajouté à ta liste ✓");
+}
+function viewRecipe(idx){
+  const r=allRecipes()[idx];if(!r)return;
+  $("zone-dialog-body").innerHTML='<h3 style="font-size:20px;margin-bottom:2px">'+(r.e?r.e+" ":"")+esc(r.n)+(r.custom?' <span class="badge ok">Ma recette</span>':"")+'</h3>'+
+    '<p class="sub" style="margin-bottom:12px">'+(r.t?"Environ "+r.t+" minutes":"")+'</p>'+
+    '<div class="eyebrow">Ingrédients</div>'+
+    r.i.map(ing=>{
+      const ok=ingOwned(ing);
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+        '<span style="'+(ok?"":"color:var(--muted)")+'">'+(ok?"✓ ":"· ")+esc(ing)+'</span>'+
+        (ok?"":'<button class="btn ghost small" onclick="addShopNamed(\''+esc(ing).replace(/'/g,"\\'")+'\');viewRecipe('+idx+')">＋ liste</button>')+'</div>';
+    }).join("")+
+    '<div class="eyebrow mt">Préparation</div><p style="font-size:14px;line-height:1.6">'+esc(r.d||"")+'</p>'+
+    '<div class="mt" style="display:flex;gap:10px;flex-wrap:wrap">'+
+    '<button class="btn ghost" onclick="document.getElementById(\'zone-dialog\').close()">Fermer</button>'+
+    (r.custom?'<button class="btn danger" onclick="delMyRecipe(\''+r.id+'\')">Supprimer cette recette</button>':"")+
+    '</div>';
+  $("zone-dialog").showModal();
+}
+function addMyRecipe(){
+  const n=$("mr-name").value.trim();
+  if(!n)return toast("Donne un nom à ta recette.");
+  const ings=$("mr-ings").value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!ings.length)return toast("Indique au moins un ingrédient (séparés par des virgules).");
+  (D.myRecipes=D.myRecipes||[]).push({
+    id:uid(),n,
+    e:$("mr-emoji").value.trim()||"🍽️",
+    t:parseInt($("mr-time").value)||null,
+    i:ings,
+    d:$("mr-steps").value.trim()
+  });
+  save();
+  $("mr-name").value="";$("mr-emoji").value="";$("mr-time").value="";$("mr-ings").value="";$("mr-steps").value="";
+  renderRecipes();
+  toast("Recette « "+n+" » ajoutée ✓");
+}
+function delMyRecipe(id){
+  const r=(D.myRecipes||[]).find(x=>x.id===id);if(!r)return;
+  if(!confirm("Supprimer ta recette « "+r.n+" » ?"))return;
+  D.myRecipes=D.myRecipes.filter(x=>x.id!==id);
+  save();renderRecipes();
+  $("zone-dialog").close();
+}
+function renderRecipes(){
+  const el=$("recipe-list");if(!el)return;
+  const arr=allRecipes();
+  const items=D.shopping||[];
+  if(!items.length){el.innerHTML='<p class="empty">Ajoute des ingrédients à ta liste pour voir des idées de recettes.</p>';}
+  else{
+    const scored=arr.map((r,idx)=>{
+      const owned=r.i.filter(ingOwned);
+      return{idx,r,owned,score:owned.length,missing:r.i.filter(x=>!owned.includes(x))};
+    }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.missing.length-b.missing.length).slice(0,6);
+    el.innerHTML=scored.length?scored.map(x=>
+      '<div class="list-item"><div style="flex:1">'+
+      '<b>'+(x.r.e?x.r.e+" ":"")+esc(x.r.n)+'</b> <span class="meta">· '+(x.r.t?x.r.t+" min · ":"")+x.score+"/"+x.r.i.length+' ingrédients</span>'+(x.r.custom?' <span class="badge ok">perso</span>':"")+
+      '<div class="mt8">'+
+      x.owned.map(i=>'<span class="chip" style="background:rgba(74,222,158,.13);color:#7BEDBB">✓ '+esc(i)+'</span>').join("")+
+      x.missing.map(i=>'<span class="chip" style="background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer" onclick="addShopNamed(\''+esc(i).replace(/'/g,"\\'")+'\')" title="Ajouter à la liste">＋ '+esc(i)+'</span>').join("")+
+      '</div></div>'+
+      '<button class="btn ghost small" onclick="viewRecipe('+x.idx+')">Voir</button></div>'
+    ).join(""):'<p class="empty">Aucune recette ne correspond encore — ajoute par exemple poulet, œufs, riz ou des légumes.</p>';
+  }
+  // Mes recettes (toujours listées)
+  const mineEl=$("my-recipes");
+  if(mineEl){
+    const base=RECIPES.length;
+    const mine=(D.myRecipes||[]);
+    $("my-recipes-title").style.display=mine.length?"block":"none";
+    mineEl.innerHTML=mine.map((r,k)=>
+      '<div class="list-item"><div><b>'+(r.e?r.e+" ":"")+esc(r.n)+'</b> <span class="meta">'+(r.t?"· "+r.t+" min ":"")+"· "+r.i.length+' ingrédients</span></div>'+
+      '<div style="display:flex;gap:6px"><button class="btn ghost small" onclick="viewRecipe('+(base+k)+')">Voir</button>'+
+      '<button class="btn danger small" onclick="delMyRecipe(\''+r.id+'\')">✕</button></div></div>'
+    ).join("");
+  }
 }
 
 /* ───────────────────────── Import CSV Withings ───────────────────────── */
@@ -1819,7 +1971,7 @@ function importJSON(){
     try{
       const obj=JSON.parse(reader.result);
       if(!obj.weights||!obj.sessions)throw new Error();
-      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]},obj);
+      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]},obj);
       save();renderAll();toast("Sauvegarde restaurée ✓");
     }catch(e){toast("Fichier invalide — vérifie qu'il s'agit bien d'un export Silhouette.");}
   };
@@ -1828,7 +1980,7 @@ function importJSON(){
 async function resetAll(){
   if(!confirm("Tout effacer définitivement ? Cette action est irréversible."))return;
   D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[]};
+     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]};
   save();renderAll();toast("Données effacées.");
 }
 
