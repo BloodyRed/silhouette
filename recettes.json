@@ -1,0 +1,478 @@
+[
+  {
+    "n": "Bowl poulet-quinoa",
+    "e": "🥗",
+    "t": 25,
+    "i": [
+      "poulet",
+      "quinoa",
+      "avocat",
+      "tomate",
+      "concombre"
+    ],
+    "d": "Fais griller le poulet en dés, cuis le quinoa, assemble avec les légumes frais, citron et un filet d'huile d'olive."
+  },
+  {
+    "n": "Saumon rôti au brocoli",
+    "e": "🐟",
+    "t": 20,
+    "i": [
+      "saumon",
+      "brocoli",
+      "citron"
+    ],
+    "d": "Saumon au four 12-15 min à 200 °C avec le brocoli en fleurettes, citron et herbes."
+  },
+  {
+    "n": "Omelette épinards-feta",
+    "e": "🍳",
+    "t": 10,
+    "i": [
+      "oeuf",
+      "epinard",
+      "feta"
+    ],
+    "d": "Bats 3 œufs, fais tomber les épinards à la poêle, verse les œufs et émiette la feta."
+  },
+  {
+    "n": "Poêlée dinde-courgettes",
+    "e": "🍗",
+    "t": 20,
+    "i": [
+      "dinde",
+      "courgette",
+      "oignon",
+      "poivron"
+    ],
+    "d": "Saisis la dinde en lanières, ajoute les légumes émincés, paprika et un trait de citron."
+  },
+  {
+    "n": "Salade de lentilles",
+    "e": "🥙",
+    "t": 15,
+    "i": [
+      "lentille",
+      "tomate",
+      "oignon",
+      "feta",
+      "concombre"
+    ],
+    "d": "Lentilles cuites refroidies, dés de légumes, feta, vinaigrette moutarde légère."
+  },
+  {
+    "n": "Curry de pois chiches",
+    "e": "🍛",
+    "t": 25,
+    "i": [
+      "pois chiche",
+      "tomate",
+      "oignon",
+      "lait de coco",
+      "riz"
+    ],
+    "d": "Fais revenir l'oignon, ajoute curry, tomates et pois chiches, mijote 15 min avec le lait de coco, sers sur riz."
+  },
+  {
+    "n": "Porridge banane-cannelle",
+    "e": "🥣",
+    "t": 8,
+    "i": [
+      "flocon avoine",
+      "banane",
+      "lait",
+      "cannelle"
+    ],
+    "d": "Cuis les flocons dans le lait 5 min, ajoute la banane écrasée et la cannelle."
+  },
+  {
+    "n": "Yaourt grec gourmand",
+    "e": "🍓",
+    "t": 5,
+    "i": [
+      "yaourt grec",
+      "flocon avoine",
+      "fruit rouge",
+      "miel"
+    ],
+    "d": "Yaourt grec, flocons, fruits rouges et un filet de miel — parfait au petit-déj ou en collation."
+  },
+  {
+    "n": "Pâtes complètes au thon",
+    "e": "🍝",
+    "t": 20,
+    "i": [
+      "pate",
+      "thon",
+      "tomate",
+      "oignon"
+    ],
+    "d": "Sauce tomate-oignon express, thon égoutté, pâtes complètes al dente."
+  },
+  {
+    "n": "Buddha bowl patate douce",
+    "e": "🍠",
+    "t": 35,
+    "i": [
+      "patate douce",
+      "quinoa",
+      "pois chiche",
+      "epinard",
+      "avocat"
+    ],
+    "d": "Patate douce rôtie au four, quinoa, pois chiches grillés, épinards frais et avocat."
+  },
+  {
+    "n": "Crevettes sautées au riz",
+    "e": "🍤",
+    "t": 15,
+    "i": [
+      "crevette",
+      "riz",
+      "brocoli",
+      "ail",
+      "sauce soja"
+    ],
+    "d": "Wok : ail, crevettes 3 min, brocoli croquant, sauce soja, sers sur riz."
+  },
+  {
+    "n": "Poulet rôti haricots verts",
+    "e": "🍗",
+    "t": 30,
+    "i": [
+      "poulet",
+      "haricot vert",
+      "ail",
+      "citron"
+    ],
+    "d": "Filets de poulet au four avec ail et citron, haricots verts vapeur."
+  },
+  {
+    "n": "Chili sin carne",
+    "e": "🌶️",
+    "t": 30,
+    "i": [
+      "haricot rouge",
+      "tomate",
+      "oignon",
+      "poivron",
+      "riz"
+    ],
+    "d": "Fais revenir oignon et poivron, ajoute tomates, haricots rouges et épices chili, mijote 20 min."
+  },
+  {
+    "n": "Wrap poulet-avocat",
+    "e": "🌯",
+    "t": 10,
+    "i": [
+      "tortilla",
+      "poulet",
+      "avocat",
+      "tomate",
+      "salade"
+    ],
+    "d": "Tortilla complète garnie de poulet grillé, avocat écrasé, tomate et salade croquante."
+  },
+  {
+    "n": "Soupe de légumes maison",
+    "e": "🥕",
+    "t": 30,
+    "i": [
+      "carotte",
+      "poireau",
+      "courgette",
+      "oignon",
+      "pomme de terre"
+    ],
+    "d": "Fais suer l'oignon, ajoute les légumes en morceaux, couvre d'eau, 20 min, mixe."
+  },
+  {
+    "n": "Tofu sauté aux légumes",
+    "e": "🥦",
+    "t": 20,
+    "i": [
+      "tofu",
+      "brocoli",
+      "carotte",
+      "sauce soja",
+      "riz"
+    ],
+    "d": "Tofu doré à la poêle, légumes croquants, sauce soja-gingembre, sers sur riz."
+  },
+  {
+    "n": "Salade grecque",
+    "e": "🥗",
+    "t": 10,
+    "i": [
+      "concombre",
+      "tomate",
+      "feta",
+      "olive",
+      "oignon"
+    ],
+    "d": "Gros dés de concombre et tomate, feta, olives, oignon rouge, origan et huile d'olive."
+  },
+  {
+    "n": "Steak & patate douce",
+    "e": "🥩",
+    "t": 25,
+    "i": [
+      "boeuf",
+      "patate douce",
+      "salade"
+    ],
+    "d": "Steak maigre grillé, frites de patate douce au four, salade verte."
+  },
+  {
+    "n": "Toast avocat-œuf",
+    "e": "🥑",
+    "t": 10,
+    "i": [
+      "pain complet",
+      "avocat",
+      "oeuf",
+      "citron"
+    ],
+    "d": "Pain complet toasté, avocat écrasé au citron, œuf poché ou au plat par-dessus."
+  },
+  {
+    "n": "Papillote de poisson blanc",
+    "e": "🐟",
+    "t": 25,
+    "i": [
+      "cabillaud",
+      "courgette",
+      "tomate",
+      "citron"
+    ],
+    "d": "Poisson en papillote avec courgette, tomate, citron et herbes, 18 min à 190 °C."
+  },
+  {
+    "n": "Poulet crémeux aux champignons",
+    "e": "🍄",
+    "t": 25,
+    "i": [
+      "poulet",
+      "champignon",
+      "creme",
+      "oignon"
+    ],
+    "d": "Poulet saisi, champignons et oignon fondus, déglace et lie avec un peu de crème légère."
+  },
+  {
+    "n": "Smoothie vert banane",
+    "e": "🥤",
+    "t": 5,
+    "i": [
+      "banane",
+      "epinard",
+      "yaourt grec",
+      "lait"
+    ],
+    "d": "Mixe banane, poignée d'épinards, yaourt grec et lait — vitaminé et rassasiant."
+  },
+  {
+    "n": "Banana bread sain",
+    "e": "🍌",
+    "t": 50,
+    "i": [
+      "banane",
+      "flocon avoine",
+      "oeuf",
+      "yaourt grec",
+      "miel",
+      "cannelle"
+    ],
+    "d": "Écrase 3 bananes bien mûres (c'est elles qui sucrent !), mélange avec 2 œufs, 180 g de flocons d'avoine mixés en farine, 100 g de yaourt grec, 1 c. à s. de miel et de la cannelle. 40-45 min à 180 °C. Moelleux, sans sucre raffiné."
+  },
+  {
+    "n": "Cookies banane-avoine (3 ingrédients)",
+    "e": "🍪",
+    "t": 15,
+    "i": [
+      "banane",
+      "flocon avoine",
+      "chocolat noir"
+    ],
+    "d": "Écrase 2 bananes, incorpore 120 g de flocons d'avoine et quelques carrés de chocolat noir concassé. Forme des tas, 12 min à 180 °C. Zéro sucre ajouté."
+  },
+  {
+    "n": "Muffins banane-carotte",
+    "e": "🧁",
+    "t": 35,
+    "i": [
+      "banane",
+      "carotte",
+      "flocon avoine",
+      "oeuf",
+      "cannelle"
+    ],
+    "d": "Mixe 2 bananes avec 2 œufs, ajoute 1 carotte râpée, 150 g de flocons mixés, cannelle et 1/2 sachet de levure. 20 min à 180 °C en moules à muffins."
+  },
+  {
+    "n": "Pancakes banane 2 ingrédients",
+    "e": "🥞",
+    "t": 10,
+    "i": [
+      "banane",
+      "oeuf",
+      "flocon avoine"
+    ],
+    "d": "Mixe 1 banane + 2 œufs (+ 2 c. à s. de flocons pour la tenue). Petites poêlées 2 min par face. Parfaits avec des fruits frais."
+  },
+  {
+    "n": "Fondant banane-cacao sans sucre ajouté",
+    "e": "🍫",
+    "t": 35,
+    "i": [
+      "banane",
+      "oeuf",
+      "cacao",
+      "compote de pomme",
+      "poudre d amande"
+    ],
+    "d": "Mixe 3 bananes, 2 œufs, 100 g de compote sans sucre, 40 g de cacao non sucré et 60 g de poudre d'amande. 25 min à 180 °C — le cœur doit rester fondant."
+  },
+  {
+    "n": "Energy balls dattes-cacao",
+    "e": "🍡",
+    "t": 15,
+    "i": [
+      "datte",
+      "flocon avoine",
+      "amande",
+      "cacao"
+    ],
+    "d": "Mixe 150 g de dattes dénoyautées, 80 g de flocons, 50 g d'amandes et 1 c. à s. de cacao. Forme des billes, 30 min au frais. 1-2 par collation suffisent."
+  },
+  {
+    "n": "Barres avoine-banane maison",
+    "e": "🥜",
+    "t": 30,
+    "i": [
+      "flocon avoine",
+      "banane",
+      "raisin sec",
+      "amande"
+    ],
+    "d": "Écrase 2 bananes, mélange avec 200 g de flocons, raisins secs et amandes concassées. Tasse dans un plat, 20 min à 180 °C, découpe en barres une fois refroidi."
+  },
+  {
+    "n": "Pomme au four à la cannelle",
+    "e": "🍎",
+    "t": 25,
+    "i": [
+      "pomme",
+      "cannelle",
+      "noix"
+    ],
+    "d": "Évide une pomme, garnis de cannelle et de noix concassées, 20 min à 180 °C. Dessert ou collation chaude ultra simple."
+  },
+  {
+    "n": "Nice cream banane",
+    "e": "🍦",
+    "t": 5,
+    "i": [
+      "banane",
+      "yaourt grec"
+    ],
+    "d": "Mixe des rondelles de banane congelées avec 2 c. à s. de yaourt grec : texture de glace crémeuse, sans sucre ajouté ni sorbetière."
+  },
+  {
+    "n": "Pois chiches rôtis croustillants",
+    "e": "🫘",
+    "t": 30,
+    "i": [
+      "pois chiche",
+      "paprika",
+      "huile olive"
+    ],
+    "d": "Sèche bien les pois chiches, enrobe d'un filet d'huile et de paprika, 25 min à 200 °C en remuant. L'alternative saine aux chips."
+  },
+  {
+    "n": "Crudités & houmous",
+    "e": "🥕",
+    "t": 10,
+    "i": [
+      "carotte",
+      "concombre",
+      "poivron",
+      "pois chiche"
+    ],
+    "d": "Bâtonnets de carotte, concombre et poivron à tremper dans le houmous — la collation croquante qui cale sans peser."
+  },
+  {
+    "n": "Houmous maison",
+    "e": "🫓",
+    "t": 10,
+    "i": [
+      "pois chiche",
+      "citron",
+      "ail",
+      "puree de sesame",
+      "huile olive"
+    ],
+    "d": "Mixe 250 g de pois chiches avec le jus d'un citron, 1 gousse d'ail, 1 c. à s. de purée de sésame et un peu d'eau de cuisson jusqu'à texture crémeuse."
+  },
+  {
+    "n": "Sauce yaourt aux herbes",
+    "e": "🥣",
+    "t": 5,
+    "i": [
+      "yaourt grec",
+      "citron",
+      "ail",
+      "ciboulette"
+    ],
+    "d": "Yaourt grec + jus de citron + ail pressé + ciboulette ciselée, sel et poivre. Remplace la mayo partout : crudités, wraps, poisson."
+  },
+  {
+    "n": "Vinaigrette légère moutarde-miel",
+    "e": "🥗",
+    "t": 5,
+    "i": [
+      "moutarde",
+      "miel",
+      "citron",
+      "huile olive"
+    ],
+    "d": "1 c. à c. de moutarde, 1/2 c. à c. de miel, jus de citron et 1 c. à s. d'huile d'olive émulsionnés — deux fois moins d'huile qu'une vinaigrette classique."
+  },
+  {
+    "n": "Guacamole allégé",
+    "e": "🥑",
+    "t": 10,
+    "i": [
+      "avocat",
+      "tomate",
+      "citron",
+      "oignon",
+      "coriandre"
+    ],
+    "d": "Écrase 1 avocat avec citron, ajoute tomate et oignon en petits dés, coriandre. Alléger encore ? Remplace la moitié de l'avocat par des petits pois mixés."
+  },
+  {
+    "n": "Sauce tomate express maison",
+    "e": "🍅",
+    "t": 20,
+    "i": [
+      "tomate",
+      "ail",
+      "oignon",
+      "basilic"
+    ],
+    "d": "Fais fondre oignon et ail, ajoute des tomates concassées, 15 min à feu doux, basilic en fin de cuisson. Sans sucre caché, contrairement aux sauces du commerce."
+  },
+  {
+    "n": "Tzatziki",
+    "e": "🥒",
+    "t": 10,
+    "i": [
+      "yaourt grec",
+      "concombre",
+      "ail",
+      "citron",
+      "aneth"
+    ],
+    "d": "Râpe et presse 1/2 concombre pour retirer l'eau, mélange au yaourt grec avec ail, citron et aneth. Frais, protéiné, parfait en dip ou sur des grillades."
+  }
+]
