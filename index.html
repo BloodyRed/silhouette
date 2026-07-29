@@ -141,7 +141,10 @@ h3{font-family:var(--display);font-weight:600;font-size:16px;margin-bottom:14px}
 .hero-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:18px}
 .hstat .hs-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:4px}
 .hstat .hs-val{font-family:var(--display);font-size:24px;font-weight:700;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
-.hero-foot{grid-column:1/-1;display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--muted);border-top:1px solid var(--stroke);padding-top:14px;flex-wrap:wrap}
+.hero-foot{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;color:var(--muted);border-top:1px solid var(--stroke);padding-top:14px;flex-wrap:wrap}
+.unit-switch{display:inline-flex;border:1px solid var(--stroke);border-radius:100px;overflow:hidden;flex:none}
+.unit-switch button{background:none;border:none;color:var(--muted);padding:4px 13px;font-size:12px;font-weight:700;font-family:var(--display)}
+.unit-switch button.active{background:var(--grad);color:#fff}
 
 .btn{
   background:var(--grad);color:#fff;border:none;border-radius:12px;padding:10px 18px;
@@ -398,7 +401,11 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <div class="hstat"><div class="hs-lbl">Reste à perdre</div><div class="hs-val" id="dash-remaining">—</div><div class="delta flat" id="dash-pace"></div></div>
       <div class="hstat"><div class="hs-lbl">IMC</div><div class="hs-val" id="dash-imc">—</div><div class="delta flat" id="dash-imc-cat"></div></div>
     </div>
-    <div class="hero-foot"><span id="hero-start">Départ : —</span><span id="hero-goal">Objectif : —</span></div>
+    <div class="hero-foot"><span id="hero-start">Départ : —</span>
+      <span class="unit-switch" role="group" aria-label="Unité de poids">
+        <button type="button" data-u="kg" onclick="setUnit('kg')">kg</button><button type="button" data-u="lb" onclick="setUnit('lb')">lb</button>
+      </span>
+      <span id="hero-goal">Objectif : —</span></div>
   </div>
   </div>
 
@@ -419,7 +426,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <div class="eyebrow">Courbe de poids · 90 jours</div>
       <div class="chart-wrap" id="dash-chart"><p class="empty">Ajoute au moins deux pesées pour voir la courbe.</p></div>
       <div class="row mt">
-        <div><label>Poids du jour (kg)</label><input type="number" step="0.1" id="quick-weight" placeholder="72.4"></div>
+        <div><label id="lbl-quick">Poids du jour (kg)</label><input type="number" step="0.1" id="quick-weight" placeholder="72.4"></div>
         <div style="flex:none"><button class="btn" onclick="quickAddWeight()">Enregistrer</button></div>
       </div>
     </div>
@@ -483,7 +490,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <h3>Ajouter une pesée</h3>
       <div class="row">
         <div><label>Date</label><input type="date" id="w-date"></div>
-        <div><label>Poids (kg)</label><input type="number" step="0.1" id="w-kg" placeholder="72.4"></div>
+        <div><label id="lbl-w">Poids (kg)</label><input type="number" step="0.1" id="w-kg" placeholder="72.4"></div>
       </div>
       <div class="mt8"><label>Note (optionnel)</label><input type="text" id="w-note" placeholder="Après le sport, repas copieux la veille…"></div>
       <button class="btn mt" onclick="addWeight()">Ajouter</button>
@@ -665,8 +672,8 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
         <div><label>Taille (cm)</label><input type="number" id="s-height" placeholder="165"></div>
       </div>
       <div class="row mt8">
-        <div><label>Poids de départ (kg)</label><input type="number" step="0.1" id="s-start"></div>
-        <div><label>Poids objectif (kg)</label><input type="number" step="0.1" id="s-target"></div>
+        <div><label id="lbl-sstart">Poids de départ (kg)</label><input type="number" step="0.1" id="s-start"></div>
+        <div><label id="lbl-starget">Poids objectif (kg)</label><input type="number" step="0.1" id="s-target"></div>
       </div>
       <div class="row mt8">
         <div><label>Date de début</label><input type="date" id="s-startdate"></div>
@@ -839,7 +846,7 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.4";
+const APP_VERSION="2.5";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
@@ -988,7 +995,12 @@ function save(){
 const $=id=>document.getElementById(id);
 const todayStr=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
 const fmtDate=s=>{const[y,m,d]=s.split("-");return d+"/"+m+"/"+y;};
-const fmtKg=v=>(Math.round(v*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+" kg";
+const KG2LB=2.2046226218;
+function unitLb(){return D.settings.unit==="lb";}
+function unitLbl(){return unitLb()?"lb":"kg";}
+function kg2disp(v){return unitLb()?v*KG2LB:v;}
+function disp2kg(v){return unitLb()?v/KG2LB:v;}
+const fmtKg=v=>(Math.round(kg2disp(v)*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+" "+unitLbl();
 const fmtCm=v=>(Math.round(v*10)/10).toLocaleString("fr-FR")+" cm";
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
@@ -1086,8 +1098,18 @@ function setRef(id){
   save();renderAll();
   toast(D.refId?"Point de comparaison défini ✓ Le dashboard se base maintenant sur cette pesée.":"Comparaison ramenée à la pesée la plus ancienne.");
 }
+function setUnit(u){
+  D.settings.unit=u;save();renderAll();
+  toast(u==="lb"?"Affichage en livres (lb) — les données restent stockées en kg.":"Affichage en kilogrammes (kg).");
+}
 function renderDash(){
   const s=D.settings,ws=sortedWeights();
+  document.querySelectorAll(".unit-switch button").forEach(b=>b.classList.toggle("active",b.dataset.u===(unitLb()?"lb":"kg")));
+  const U=unitLbl();
+  if($("lbl-quick"))$("lbl-quick").textContent="Poids du jour ("+U+")";
+  if($("lbl-w"))$("lbl-w").textContent="Poids ("+U+")";
+  if($("lbl-sstart"))$("lbl-sstart").textContent="Poids de départ ("+U+")";
+  if($("lbl-starget"))$("lbl-starget").textContent="Poids objectif ("+U+")";
   $("dash-hello").textContent="Bonjour"+(s.name?" "+s.name:"")+" ✨";
   $("dash-date").textContent=new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
   $("dash-quote").textContent="« "+dayQuote()+" »";
@@ -1115,8 +1137,8 @@ function renderDash(){
     $("hero-start").textContent=manque.length?"Renseigne "+manque.join(" et ")+" dans les Réglages":"Le poids de départ et l'objectif doivent être différents";
     $("hero-goal").textContent="";
   }
-  $("dash-weight").innerHTML=eff!=null?(eff.toLocaleString("fr-FR",{minimumFractionDigits:1})+'<span class="unit"> kg</span>'):"—";
-  $("dash-weight-delta").outerHTML='<div class="delta" id="dash-weight-delta">'+((cur!=null&&start!=null)?deltaHTML(cur-start,"kg depuis "+(refLbl==="Référence"?"la référence":"le début")):(eff!=null&&cur==null?'<span class="delta flat">Poids de départ — ajoute ta première pesée</span>':""))+'</div>';
+  $("dash-weight").innerHTML=eff!=null?((Math.round(kg2disp(eff)*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+'<span class="unit"> '+unitLbl()+'</span>'):"—";
+  $("dash-weight-delta").outerHTML='<div class="delta" id="dash-weight-delta">'+((cur!=null&&start!=null)?deltaHTML(kg2disp(cur-start),unitLbl()+" depuis "+(refLbl==="Référence"?"la référence":"le début")):(eff!=null&&cur==null?'<span class="delta flat">Poids de départ — ajoute ta première pesée</span>':""))+'</div>';
   if(eff!=null&&s.heightCm){
     const imc=eff/Math.pow(s.heightCm/100,2);
     $("dash-imc").textContent=(Math.round(imc*10)/10).toLocaleString("fr-FR");
@@ -1124,7 +1146,7 @@ function renderDash(){
   }else{$("dash-imc").textContent="—";$("dash-imc-cat").textContent="Renseigne ta taille";}
   if(eff!=null&&s.targetWeight!=null){
     const rem=eff-s.targetWeight;
-    $("dash-remaining").innerHTML=(rem<=0?"Atteint 🎉":(Math.round(rem*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+'<span class="unit"> kg</span>');
+    $("dash-remaining").innerHTML=(rem<=0?"Atteint 🎉":(Math.round(kg2disp(rem)*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+'<span class="unit"> '+unitLbl()+'</span>');
     const cutoff=new Date(Date.now()-30*864e5);
     const recent=ws.filter(w=>new Date(w.date)>=cutoff);
     if(recent.length>=2&&rem>0){
@@ -1138,8 +1160,8 @@ function renderDash(){
     }else $("dash-pace").textContent="";
   }else{$("dash-remaining").textContent="—";$("dash-pace").textContent="";}
   const cutoff90=new Date(Date.now()-90*864e5);
-  const pts=ws.filter(w=>new Date(w.date)>=cutoff90).map(w=>({x:w.date,y:w.kg}));
-  const svg=lineChart(pts,{target:s.targetWeight});
+  const pts=ws.filter(w=>new Date(w.date)>=cutoff90).map(w=>({x:w.date,y:kg2disp(w.kg)}));
+  const svg=lineChart(pts,{target:s.targetWeight!=null?kg2disp(s.targetWeight):null});
   $("dash-chart").innerHTML=svg||'<p class="empty">Ajoute au moins deux pesées pour voir la courbe.</p>';
   const upcoming=nextOccurrences(3);
   $("dash-reminders").innerHTML=upcoming.length?upcoming.map(u=>
@@ -1321,7 +1343,7 @@ function dayQuote(){
 function quickAddWeight(){
   const v=parseFloat($("quick-weight").value);
   if(!v||v<=0)return toast("Entre un poids valide.");
-  upsertWeight(todayStr(),v,"");
+  upsertWeight(todayStr(),Math.round(disp2kg(v)*100)/100,"");
   $("quick-weight").value="";
   toast("Pesée enregistrée ✓");renderAll();
 }
@@ -1335,9 +1357,9 @@ function upsertWeight(date,kg,note){
 }
 function addWeight(){
   const date=$("w-date").value||todayStr();
-  const kg=parseFloat($("w-kg").value);
+  const kg=disp2kg(parseFloat($("w-kg").value));
   if(!kg||kg<=0)return toast("Entre un poids valide.");
-  upsertWeight(date,kg,$("w-note").value.trim());
+  upsertWeight(date,Math.round(kg*100)/100,$("w-note").value.trim());
   $("w-kg").value="";$("w-note").value="";
   toast("Pesée ajoutée ✓");renderAll();
 }
@@ -1371,7 +1393,7 @@ function showNote(ev,id){
 function renderPoids(){
   $("w-date").value=$("w-date").value||todayStr();
   const ws=sortedWeights();
-  const svg=lineChart(ws.map(w=>({x:w.date,y:w.kg})),{target:D.settings.targetWeight});
+  const svg=lineChart(ws.map(w=>({x:w.date,y:kg2disp(w.kg)})),{target:D.settings.targetWeight!=null?kg2disp(D.settings.targetWeight):null});
   $("poids-chart").innerHTML=svg||"";
   const rev=[...ws].reverse();
   $("poids-list").innerHTML=rev.length?'<p class="meta" style="margin-bottom:10px">📍 = point de comparaison du dashboard. Épingle une pesée pour repartir de là (reprise de poids, nouvelle phase…) ; re-clique pour revenir à la plus ancienne.</p><table><tr><th>Date</th><th>Poids</th><th>Δ</th><th>Note</th><th></th></tr>'+
@@ -1380,7 +1402,7 @@ function renderPoids(){
       const isRef=D.refId===w.id;
       return"<tr"+(isRef?' style="background:rgba(176,124,255,.08)"':"")+"><td>"+fmtDate(w.date)+
         (w.note?'<button type="button" class="note-ico" onclick="showNote(event,\''+w.id+'\')" aria-label="Voir la note">💬</button>':"")+
-        "</td><td><b>"+fmtKg(w.kg)+"</b></td><td>"+(prev?deltaHTML(w.kg-prev.kg,"kg"):"")+
+        "</td><td><b>"+fmtKg(w.kg)+"</b></td><td>"+(prev?deltaHTML(kg2disp(w.kg-prev.kg),unitLbl()):"")+
         '</td><td class="note-cell">'+esc(w.note||"")+'</td><td style="white-space:nowrap"><button class="btn '+(isRef?"":"ghost ")+'small" onclick="setRef(\''+w.id+'\')" title="'+(isRef?"Revenir à la pesée la plus ancienne":"Définir comme point de comparaison")+'">📍</button> <button class="btn danger small" onclick="delWeight(\''+w.id+'\')">✕</button></td></tr>';
     }).join("")+"</table>":'<p class="empty">Aucune pesée pour l\'instant.</p>';
 }
@@ -1739,7 +1761,7 @@ function renderCompare(){
   const days=Math.round((new Date(ps[1].date)-new Date(ps[0].date))/864e5);
   panel.style.display="block";
   panel.innerHTML='<h3 style="margin-bottom:12px">Avant / Après'+(days?' · '+days+' jour'+(days>1?"s":"")+" d'écart":"")+
-    ((wA&&wB)?' · '+deltaHTML(wB.kg-wA.kg,"kg"):"")+'</h3>'+
+    ((wA&&wB)?' · '+deltaHTML(kg2disp(wB.kg-wA.kg),unitLbl()):"")+'</h3>'+
     '<div class="compare-grid">'+ps.map((p,i)=>
       '<div><div class="cmp-tag" style="margin-bottom:6px">'+(i===0?"Avant":"Après")+' · '+fmtDate(p.date)+((i===0?wA:wB)?' · '+fmtKg((i===0?wA:wB).kg):"")+'</div>'+
       '<img src="'+photoSrc(p)+'" alt="'+(i===0?"Avant":"Après")+'" onclick="viewPhoto(\''+p.id+'\')"></div>'
@@ -1823,7 +1845,7 @@ function renderCalc(fromInput){
   }else warnEl.style.display="none";
   el.innerHTML=target.toLocaleString("fr-FR")+'<span class="unit"> kcal / jour</span>';
   const lossW=(maint-target)*7/7700;
-  $("cc-loss").textContent=(maint-target)>0?("≈ −"+(Math.round(lossW*100)/100).toLocaleString("fr-FR")+" kg / semaine à ce rythme"):"Apport de maintien du poids actuel";
+  $("cc-loss").textContent=(maint-target)>0?("≈ −"+(Math.round(kg2disp(lossW)*100)/100).toLocaleString("fr-FR")+" "+unitLbl()+" / semaine à ce rythme"):"Apport de maintien du poids actuel";
   const rows=[
     ["Métabolisme de base",bmr],
     ["Marche · "+(c.steps||0).toLocaleString("fr-FR")+" pas/j",neat],
@@ -2046,14 +2068,16 @@ function importCSV(){
 function renderSettings(){
   const s=D.settings;
   $("s-name").value=s.name||"";$("s-height").value=s.heightCm||"";
-  $("s-start").value=s.startWeight||"";$("s-target").value=s.targetWeight||"";
+  $("s-start").value=s.startWeight?Math.round(kg2disp(s.startWeight)*10)/10:"";
+  $("s-target").value=s.targetWeight?Math.round(kg2disp(s.targetWeight)*10)/10:"";
   $("s-startdate").value=s.startDate||"";$("s-water").value=s.waterGoal||8;
 }
 function saveSettings(){
-  D.settings={name:$("s-name").value.trim(),
+  const keepUnit=D.settings.unit,keepCalc=D.settings.calc;
+  D.settings={unit:keepUnit,calc:keepCalc,name:$("s-name").value.trim(),
     heightCm:parseFloat($("s-height").value)||null,
-    startWeight:parseFloat($("s-start").value)||null,
-    targetWeight:parseFloat($("s-target").value)||null,
+    startWeight:$("s-start").value?Math.round(disp2kg(parseFloat($("s-start").value))*100)/100:null,
+    targetWeight:$("s-target").value?Math.round(disp2kg(parseFloat($("s-target").value))*100)/100:null,
     startDate:$("s-startdate").value,
     waterGoal:parseInt($("s-water").value)||8};
   // Première pesée automatique à partir du poids de départ
