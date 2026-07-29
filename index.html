@@ -695,6 +695,11 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
 <!-- ══════════ NUTRITION ══════════ -->
 <section id="tab-nutrition" class="section">
   <h2>Nutrition</h2>
+  <div class="subnav">
+    <button data-sub="courses" class="active">🛒 Courses</button>
+    <button data-sub="calories">🔥 Calories</button>
+  </div>
+  <div id="sub-courses" class="subpage active">
   <p class="sub">Prépare tes courses de la semaine et coche au fur et à mesure au magasin.</p>
   <div class="grid grid-2">
     <div class="card">
@@ -736,6 +741,41 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
         <p class="meta mt8">Astuce : tu peux aussi éditer le fichier <b style="color:var(--txt)">recettes.json</b> à côté de ton index.html pour modifier la base de suggestions.</p>
       </div>
     </details>
+  </div>
+  </div>
+
+  <div id="sub-calories" class="subpage">
+    <p class="sub">Estime le nombre de calories à consommer chaque jour selon ton activité réelle : tes pas quotidiens (NEAT) et tes séances de sport.</p>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Profil & activité</h3>
+        <div class="row">
+          <div style="max-width:110px"><label>Âge</label><input type="number" id="cc-age" min="15" max="100" oninput="renderCalc()"></div>
+          <div style="max-width:150px"><label>Sexe</label><select id="cc-sex" onchange="renderCalc()"><option value="f">Femme</option><option value="h">Homme</option></select></div>
+        </div>
+        <p class="meta mt8" id="cc-basis"></p>
+        <div class="mt8"><label>Pas par jour en moyenne (NEAT)</label><input type="number" id="cc-steps" step="500" min="0" oninput="renderCalc()" placeholder="8000"></div>
+        <div class="row mt8">
+          <div><label>Séances / semaine</label><input type="number" id="cc-sessions" min="0" max="14" step="1" oninput="renderCalc()" placeholder="3"></div>
+          <div><label>Kcal moyennes / séance</label><input type="number" id="cc-kcal" step="50" min="0" oninput="renderCalc()" placeholder="300"></div>
+        </div>
+        <div class="mt8"><label>Objectif</label>
+          <select id="cc-goal" onchange="renderCalc()">
+            <option value="0">Maintien du poids</option>
+            <option value="250">Perte douce · −250 kcal/j</option>
+            <option value="500" selected>Perte modérée · −500 kcal/j</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Ta cible quotidienne</div>
+        <div class="bignum" id="cc-target">—</div>
+        <div class="delta flat" id="cc-loss"></div>
+        <div class="mt" id="cc-detail"></div>
+        <p class="delta up mt" id="cc-warn" style="display:none"></p>
+        <p class="meta mt8">Estimations indicatives (formule Mifflin-St Jeor + activité déclarée), à ajuster selon tes résultats réels sur 2-3 semaines. Pour un plan personnalisé, parles-en à un·e professionnel·le de santé ou de la nutrition.</p>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -799,7 +839,7 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.3";
+const APP_VERSION="2.4";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
@@ -1741,6 +1781,72 @@ async function hydratePhotos(){
   if(compareSel.length===2)renderCompare();
 }
 
+/* ───────────────────────── Calculateur de calories ───────────────────────── */
+function calcCfg(){D.settings.calc=D.settings.calc||{};return D.settings.calc;}
+function renderCalc(fromInput){
+  const el=$("cc-target");if(!el)return;
+  const c=calcCfg();
+  if(fromInput!==false){
+    c.age=parseInt($("cc-age").value)||null;
+    c.sex=$("cc-sex").value;
+    c.steps=parseInt($("cc-steps").value)||0;
+    c.sessions=parseFloat($("cc-sessions").value)||0;
+    c.kcal=parseInt($("cc-kcal").value)||0;
+    c.goal=parseInt($("cc-goal").value)||0;
+    save();
+  }
+  const ws=sortedWeights();
+  const w=ws.length?ws[ws.length-1].kg:D.settings.startWeight;
+  const hgt=D.settings.heightCm;
+  $("cc-basis").textContent=(w&&hgt)?("Base utilisée : "+fmtKg(w)+" (dernière pesée) · "+hgt+" cm"):"Renseigne ta taille dans ⚙ Réglages et enregistre au moins une pesée.";
+  const warnEl=$("cc-warn");
+  if(!w||!hgt||!c.age){
+    el.textContent="—";
+    $("cc-detail").innerHTML="";
+    $("cc-loss").textContent="Complète l'âge (et taille + poids si besoin) pour calculer.";
+    warnEl.style.display="none";
+    return;
+  }
+  const bmr=Math.round(10*w+6.25*hgt-5*c.age+(c.sex==="h"?5:-161));
+  const km=(c.steps||0)*0.00072;
+  const neat=Math.round(0.5*w*km);
+  const sport=Math.round(((c.sessions||0)*(c.kcal||0))/7);
+  const sub=bmr+neat+sport;
+  const tef=Math.round(sub*0.1);
+  const maint=sub+tef;
+  let target=maint-(c.goal||0);
+  const floor=c.sex==="h"?1500:1200;
+  if(target<floor){
+    warnEl.style.display="block";
+    warnEl.textContent="⚠️ Cible plafonnée à "+floor+" kcal/j — descendre en dessous n'est pas recommandé sans suivi médical.";
+    target=floor;
+  }else warnEl.style.display="none";
+  el.innerHTML=target.toLocaleString("fr-FR")+'<span class="unit"> kcal / jour</span>';
+  const lossW=(maint-target)*7/7700;
+  $("cc-loss").textContent=(maint-target)>0?("≈ −"+(Math.round(lossW*100)/100).toLocaleString("fr-FR")+" kg / semaine à ce rythme"):"Apport de maintien du poids actuel";
+  const rows=[
+    ["Métabolisme de base",bmr],
+    ["Marche · "+(c.steps||0).toLocaleString("fr-FR")+" pas/j",neat],
+    ["Sport · "+(c.sessions||0)+" séance"+(c.sessions>1?"s":"")+"/sem × "+(c.kcal||0)+" kcal",sport],
+    ["Digestion (≈ 10 %)",tef]
+  ];
+  $("cc-detail").innerHTML=rows.map(x=>
+    '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:var(--muted)">'+x[0]+'</span><b style="white-space:nowrap">+ '+x[1].toLocaleString("fr-FR")+'</b></div>'
+  ).join("")+
+  '<div style="display:flex;justify-content:space-between;padding:9px 0 0;font-size:15px"><span>Maintenance estimée</span><b style="color:#CBB2FF">'+maint.toLocaleString("fr-FR")+' kcal/j</b></div>';
+}
+function initCalcInputs(){
+  const c=calcCfg();
+  if(!$("cc-age"))return;
+  $("cc-age").value=c.age||"";
+  $("cc-sex").value=c.sex||"f";
+  $("cc-steps").value=c.steps||"";
+  $("cc-sessions").value=c.sessions||"";
+  $("cc-kcal").value=c.kcal||"";
+  $("cc-goal").value=String(c.goal!=null?c.goal:500);
+  renderCalc(false);
+}
+
 /* ───────────────────────── Liste de courses ───────────────────────── */
 function addShop(){
   const v=$("shop-input").value.trim();
@@ -2040,7 +2146,7 @@ window.addEventListener("resize",updateNavFade);
 updateNavFade();
 function renderAll(){
   renderDash();renderWeek();renderPoids();renderMeasureForm();renderZones();renderSessions();
-  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();applyDashOrder();
+  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();initCalcInputs();applyDashOrder();
 }
 document.getElementById("app-ver").textContent="v"+APP_VERSION;
 document.getElementById("app-ver-full").textContent="Silhouette v"+APP_VERSION+" · build du "+APP_BUILD.split("-").reverse().join("/");
