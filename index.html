@@ -763,8 +763,9 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
           <div><label>Nom</label><input type="text" id="mr-name" placeholder="Gratin de courgettes léger"></div>
           <div style="max-width:110px"><label>Emoji</label><input type="text" id="mr-emoji" placeholder="🥘" maxlength="4"></div>
           <div style="max-width:130px"><label>Temps (min)</label><input type="number" id="mr-time" placeholder="30"></div>
+          <div style="max-width:120px"><label>Portions</label><input type="number" id="mr-srv" min="1" placeholder="4"></div>
         </div>
-        <div class="mt8"><label>Ingrédients (séparés par des virgules)</label><input type="text" id="mr-ings" placeholder="courgette, oeuf, fromage rapé, lait"></div>
+        <div class="mt8"><label>Ingrédients — séparés par des virgules, quantité optionnelle après « : »</label><input type="text" id="mr-ings" placeholder="courgette: 2, oeuf: 3, fromage rapé: 40 g, lait: 100 ml"></div>
         <div class="mt8"><label>Tags (optionnel, séparés par des virgules)</label><input type="text" id="mr-tags" placeholder="protéiné, rapide, végé…"></div>
         <div class="row mt8">
           <div><label>Kcal / portion</label><input type="number" id="mr-kcal" placeholder="350"></div>
@@ -880,7 +881,7 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.11";
+const APP_VERSION="2.12";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
@@ -2042,8 +2043,14 @@ function viewRecipe(idx){
 function addMyRecipe(){
   const n=$("mr-name").value.trim();
   if(!n)return toast("Donne un nom à ta recette.");
-  const ings=$("mr-ings").value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
-  if(!ings.length)return toast("Indique au moins un ingrédient (séparés par des virgules).");
+  const raw=$("mr-ings").value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
+  if(!raw.length)return toast("Indique au moins un ingrédient (séparés par des virgules).");
+  const ings=[],qs=[];let hasQ=false;
+  raw.forEach(x=>{
+    const p=x.split(":");
+    if(p.length>1){ings.push(p[0].trim());qs.push(p.slice(1).join(":").trim());hasQ=true;}
+    else{ings.push(x);qs.push("");}
+  });
   const tags=$("mr-tags").value.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
   (D.myRecipes=D.myRecipes||[]).push({
     id:uid(),n,
@@ -2053,13 +2060,15 @@ function addMyRecipe(){
     d:(function(){const L=$("mr-steps").value.split(/\n/).map(x=>x.trim()).filter(Boolean);return L.length>1?"":L.join("");})(),
     steps:(function(){const L=$("mr-steps").value.split(/\n/).map(x=>x.trim()).filter(Boolean);return L.length>1?L:undefined;})(),
     tags:tags.length?tags:undefined,
+    q:hasQ?qs:undefined,
+    srv:parseInt($("mr-srv").value)||undefined,
     kcal:parseInt($("mr-kcal").value)||undefined,
     p:parseInt($("mr-p").value)||undefined,
     c:parseInt($("mr-c").value)||undefined,
     fb:parseInt($("mr-fb").value)||undefined
   });
   save();
-  $("mr-name").value="";$("mr-emoji").value="";$("mr-time").value="";$("mr-ings").value="";$("mr-steps").value="";$("mr-tags").value="";$("mr-kcal").value="";$("mr-p").value="";$("mr-c").value="";$("mr-fb").value="";
+  $("mr-name").value="";$("mr-emoji").value="";$("mr-time").value="";$("mr-ings").value="";$("mr-steps").value="";$("mr-tags").value="";$("mr-kcal").value="";$("mr-p").value="";$("mr-c").value="";$("mr-fb").value="";$("mr-srv").value="";
   renderRecipes();
   toast("Recette « "+n+" » ajoutée ✓");
 }
