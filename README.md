@@ -114,11 +114,12 @@ Placer le fichier **à côté de `index.html`**. S'il est absent (ou en ouvertur
   "e": "🥘",
   "t": 30,
   "i": ["ingrédient 1", "ingrédient 2"],
-  "d": "Préparation en quelques phrases."
+  "d": "Préparation en quelques phrases.",
+  "tags": ["protéiné", "rapide"]
 }
 ```
 
-`n` = nom · `e` = emoji (optionnel) · `t` = temps en minutes (optionnel) · `i` = ingrédients (mots simples — la correspondance ignore accents et pluriels) · `d` = préparation. Les recettes ajoutées **dans l'app** (« ＋ Ajouter ma propre recette ») sont, elles, stockées avec les données utilisateur et synchronisées dans le cloud.
+`n` = nom · `e` = emoji (optionnel) · `t` = temps en minutes (optionnel) · `i` = ingrédients (mots simples — la correspondance ignore accents et pluriels) · `q` = quantités alignées sur `i` (optionnel, ex. `["150 g", "2", "1 c. à s."]`) · `srv` = nombre de portions (optionnel) · `d` = phrase d'introduction · `steps` = préparation étape par étape (tableau de chaînes, une par étape — optionnel, repli sur `d` si absent) · `tags` = étiquettes libres (optionnel), qui alimentent les filtres de l'app · `kcal`, `p`, `c`, `fb` = estimations par portion (kcal, protéines, glucides, fibres en g — optionnel, alimente les puces de macros et la couleur de bordure des cartes). Les recettes ajoutées **dans l'app** (« ＋ Ajouter ma propre recette ») sont, elles, stockées avec les données utilisateur et synchronisées dans le cloud.
 
 ## 🗒️ Données
 
