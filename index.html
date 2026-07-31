@@ -69,6 +69,17 @@ header{padding:26px 20px 0;max-width:1120px;margin:0 auto}
 .shop-item input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:#4ADE9E;cursor:pointer}
 .shop-item span{flex:1}
 .shop-item.done span{text-decoration:line-through;color:var(--muted)}
+.recipe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.rcard{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-left:4px solid #B07CFF;border-radius:16px;padding:14px;cursor:pointer;transition:transform .15s,border-color .15s;display:flex;flex-direction:column;gap:8px}
+.rcard:hover{transform:translateY(-2px)}
+.rcard.prot{border-left-color:#FF7AA2}
+.rcard.light{border-left-color:#4ADE9E}
+.rcard.carb{border-left-color:#6C8CFF}
+.rcard-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.rcard-title{font-family:var(--display);font-weight:600;font-size:15px;line-height:1.3}
+.fav-btn{background:none;border:none;font-size:19px;line-height:1;padding:2px;flex:none;filter:grayscale(1);opacity:.45;transition:all .15s}
+.fav-btn.on{filter:none;opacity:1;transform:scale(1.1)}
+.mch{display:inline-flex;align-items:baseline;gap:3px;border-radius:8px;padding:3px 8px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
 .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
 .photo-card{background:rgba(255,255,255,.035);border:1px solid var(--stroke);border-radius:14px;padding:8px}
 .photo-card.sel{border-color:#4ADE9E;box-shadow:0 0 0 1px #4ADE9E}
@@ -704,6 +715,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
   <h2>Nutrition</h2>
   <div class="subnav">
     <button data-sub="courses" class="active">🛒 Courses</button>
+    <button data-sub="recettes">🍽️ Recettes</button>
     <button data-sub="calories">🔥 Calories</button>
   </div>
   <div id="sub-courses" class="subpage active">
@@ -726,10 +738,20 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
     </div>
   </div>
 
-  <div class="card mt">
-    <h3>🍽️ Idées de recettes avec ta liste</h3>
-    <p class="meta" style="margin-bottom:12px">Suggestions tirées d'une base de recettes équilibrées intégrée, selon les ingrédients de ta liste (à acheter ou déjà cochés). Touche un ingrédient grisé ＋ pour l'ajouter à ta liste.</p>
-    <div id="recipe-list"><p class="empty">Ajoute des ingrédients à ta liste pour voir des idées de recettes.</p></div>
+  <div class="card mt" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:14px;color:var(--muted)">Envie d'idées avec ta liste ? Les suggestions ont déménagé dans l'onglet Recettes.</span>
+    <button class="btn ghost small" onclick="document.querySelector('#tab-nutrition .subnav button[data-sub=&quot;recettes&quot;]').click()">🍽️ Voir les recettes</button>
+  </div>
+  </div>
+
+  <div id="sub-recettes" class="subpage">
+    <p class="sub">Parcours les recettes en cartes : recherche, filtres rapides, favoris ❤ et estimation des macros par portion. La bordure colorée indique le profil dominant.</p>
+    <div class="row" style="margin-bottom:10px">
+      <div><label>Rechercher</label><input type="search" id="rc-search" placeholder="Nom ou ingrédient : banane, poulet, curry…" oninput="recipeSearch=this.value;renderRecipes()"></div>
+    </div>
+    <div id="recipe-tagbar" style="margin-bottom:8px"></div>
+    <p class="meta" style="margin-bottom:12px">Bordures : <span style="color:#FF7AA2">■ protéiné</span> · <span style="color:#4ADE9E">■ léger (≤ 250 kcal)</span> · <span style="color:#6C8CFF">■ riche en glucides</span> · <span style="color:#B07CFF">■ équilibré</span> — macros estimées par portion.</p>
+    <div class="recipe-grid" id="recipe-list"></div>
 
     <div class="eyebrow mt" id="my-recipes-title" style="display:none">Mes recettes</div>
     <div id="my-recipes"></div>
@@ -743,12 +765,18 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
           <div style="max-width:130px"><label>Temps (min)</label><input type="number" id="mr-time" placeholder="30"></div>
         </div>
         <div class="mt8"><label>Ingrédients (séparés par des virgules)</label><input type="text" id="mr-ings" placeholder="courgette, oeuf, fromage rapé, lait"></div>
-        <div class="mt8"><label>Préparation</label><textarea id="mr-steps" rows="2" placeholder="Étapes en quelques phrases…"></textarea></div>
+        <div class="mt8"><label>Tags (optionnel, séparés par des virgules)</label><input type="text" id="mr-tags" placeholder="protéiné, rapide, végé…"></div>
+        <div class="row mt8">
+          <div><label>Kcal / portion</label><input type="number" id="mr-kcal" placeholder="350"></div>
+          <div><label>Protéines (g)</label><input type="number" id="mr-p" placeholder="25"></div>
+          <div><label>Glucides (g)</label><input type="number" id="mr-c" placeholder="40"></div>
+          <div><label>Fibres (g)</label><input type="number" id="mr-fb" placeholder="6"></div>
+        </div>
+        <div class="mt8"><label>Préparation (une étape par ligne)</label><textarea id="mr-steps" rows="4" placeholder="Préchauffe le four à 180 °C&#10;Coupe les courgettes en rondelles&#10;…"></textarea></div>
         <button class="btn mt8" onclick="addMyRecipe()">Ajouter la recette</button>
         <p class="meta mt8">Astuce : tu peux aussi éditer le fichier <b style="color:var(--txt)">recettes.json</b> à côté de ton index.html pour modifier la base de suggestions.</p>
       </div>
     </details>
-  </div>
   </div>
 
   <div id="sub-calories" class="subpage">
@@ -781,6 +809,12 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
         <div class="mt" id="cc-detail"></div>
         <p class="delta up mt" id="cc-warn" style="display:none"></p>
         <p class="meta mt8">Estimations indicatives (formule Mifflin-St Jeor + activité déclarée), à ajuster selon tes résultats réels sur 2-3 semaines. Pour un plan personnalisé, parles-en à un·e professionnel·le de santé ou de la nutrition.</p>
+      </div>
+
+      <div class="card" style="grid-column:1/-1">
+        <div class="eyebrow">Répartition recommandée · macros & fibres</div>
+        <div id="macro-body"><p class="empty">Complète le profil ci-dessus pour voir tes macros.</p></div>
+        <p class="meta mt8">Repères : protéines ≈ 1,8 g/kg de poids (fourchette 1,6–2,2 g/kg conseillée en perte de poids pour préserver la masse musculaire), lipides ≈ 30 % des calories (jamais en dessous de ~20 %), glucides en complément, fibres ≈ 14 g / 1 000 kcal (minimum 25 g). Repères généraux à adapter avec un·e professionnel·le.</p>
       </div>
     </div>
   </div>
@@ -846,11 +880,11 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.5";
+const APP_VERSION="2.11";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]};
+       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]};
 let storageOK=false;
 
 /* Stockage local : Claude storage → localStorage (hors Claude) → mémoire */
@@ -957,7 +991,7 @@ async function cloudPull(silent,force){
       if(silent&&remoteT<=localT){renderCloud();return;} // rien de plus récent
       if(!silent&&remoteT<localT&&!confirm("Les données du cloud sont plus anciennes que celles de cet appareil. Les récupérer quand même ?")){renderCloud();return;}
     }
-    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]},remote);
+    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]},remote);
     saveLocal();
     C.lastSync=new Date().toISOString();C.linked=true;persistCloudCfg();
     renderAll();
@@ -1827,6 +1861,7 @@ function renderCalc(fromInput){
     $("cc-detail").innerHTML="";
     $("cc-loss").textContent="Complète l'âge (et taille + poids si besoin) pour calculer.";
     warnEl.style.display="none";
+    renderMacros(null,null);
     return;
   }
   const bmr=Math.round(10*w+6.25*hgt-5*c.age+(c.sex==="h"?5:-161));
@@ -1856,6 +1891,47 @@ function renderCalc(fromInput){
     '<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.06)"><span style="color:var(--muted)">'+x[0]+'</span><b style="white-space:nowrap">+ '+x[1].toLocaleString("fr-FR")+'</b></div>'
   ).join("")+
   '<div style="display:flex;justify-content:space-between;padding:9px 0 0;font-size:15px"><span>Maintenance estimée</span><b style="color:#CBB2FF">'+maint.toLocaleString("fr-FR")+' kcal/j</b></div>';
+  renderMacros(target,w);
+}
+function renderMacros(target,w){
+  const el=$("macro-body");if(!el)return;
+  if(!target||!w){el.innerHTML='<p class="empty">Complète le profil ci-dessus pour voir tes macros.</p>';return;}
+  // Protéines : ~1,8 g/kg, plafonnées à 40 % des calories pour les petites cibles
+  let protG=Math.round(1.8*w);
+  const protMax=Math.floor(target*0.40/4);
+  if(protG>protMax)protG=protMax;
+  const protK=protG*4;
+  const fatK=Math.round(target*0.30);
+  const fatG=Math.round(fatK/9);
+  const carbK=Math.max(0,target-protK-fatK);
+  const carbG=Math.round(carbK/4);
+  const fiber=Math.max(25,Math.round(target/1000*14));
+  const parts=[
+    {label:"Protéines",g:protG,k:protK,color:"#FF7AA2",note:"≈ "+(Math.round(protG/w*10)/10).toLocaleString("fr-FR")+" g/kg"},
+    {label:"Glucides",g:carbG,k:carbK,color:"#B07CFF",note:"énergie du quotidien"},
+    {label:"Lipides",g:fatG,k:fatK,color:"#6C8CFF",note:"≈ 30 % des calories"}
+  ];
+  const C=2*Math.PI*58;
+  let off=0,segs="";
+  parts.forEach(p=>{
+    const pct=p.k/target;
+    const len=C*pct;
+    segs+='<circle cx="80" cy="80" r="58" fill="none" stroke="'+p.color+'" stroke-width="21" stroke-linecap="butt" stroke-dasharray="'+len.toFixed(1)+' '+(C-len).toFixed(1)+'" stroke-dashoffset="'+(-off).toFixed(1)+'" transform="rotate(-90 80 80)" style="filter:drop-shadow(0 0 6px '+p.color+'44)"/>';
+    off+=len;
+  });
+  el.innerHTML='<div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center">'+
+    '<svg viewBox="0 0 160 160" style="width:180px;flex:none" role="img" aria-label="Répartition des macronutriments">'+
+    '<circle cx="80" cy="80" r="58" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="21"/>'+segs+
+    '<text x="80" y="74" text-anchor="middle" font-size="11" fill="#9A94B8">cible</text>'+
+    '<text x="80" y="94" text-anchor="middle" font-size="16" font-weight="700" fill="#F2F0FA">'+target.toLocaleString("fr-FR")+' kcal</text></svg>'+
+    '<div style="flex:1;min-width:230px">'+
+    parts.map(p=>'<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      '<span style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:3px;background:'+p.color+';flex:none"></span><b>'+p.label+'</b> <span class="meta">'+p.note+'</span></span>'+
+      '<span style="white-space:nowrap;font-variant-numeric:tabular-nums"><b style="font-size:16px">'+p.g+' g</b> <span class="meta">· '+p.k.toLocaleString("fr-FR")+' kcal · '+Math.round(p.k/target*100)+' %</span></span></div>').join("")+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:8px 0">'+
+      '<span style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:3px;background:#4ADE9E;flex:none"></span><b>Fibres</b> <span class="meta">légumes, légumineuses, avoine…</span></span>'+
+      '<span><b style="font-size:16px">'+fiber+' g</b> <span class="meta">· minimum / jour</span></span></div>'+
+    '</div></div>';
 }
 function initCalcInputs(){
   const c=calcCfg();
@@ -1904,30 +1980,7 @@ function renderShop(){
 }
 
 /* ───────────────────────── Idées de recettes ───────────────────────── */
-let RECIPES=[
-{n:"Bowl poulet-quinoa",e:"🥗",t:25,i:["poulet","quinoa","avocat","tomate","concombre"],d:"Fais griller le poulet en dés, cuis le quinoa, assemble avec les légumes frais, citron et un filet d'huile d'olive."},
-{n:"Saumon rôti au brocoli",e:"🐟",t:20,i:["saumon","brocoli","citron"],d:"Saumon au four 12-15 min à 200 °C avec le brocoli en fleurettes, citron et herbes."},
-{n:"Omelette épinards-feta",e:"🍳",t:10,i:["oeuf","epinard","feta"],d:"Bats 3 œufs, fais tomber les épinards à la poêle, verse les œufs et émiette la feta."},
-{n:"Poêlée dinde-courgettes",e:"🍗",t:20,i:["dinde","courgette","oignon","poivron"],d:"Saisis la dinde en lanières, ajoute les légumes émincés, paprika et un trait de citron."},
-{n:"Salade de lentilles",e:"🥙",t:15,i:["lentille","tomate","oignon","feta","concombre"],d:"Lentilles cuites refroidies, dés de légumes, feta, vinaigrette moutarde légère."},
-{n:"Curry de pois chiches",e:"🍛",t:25,i:["pois chiche","tomate","oignon","lait de coco","riz"],d:"Fais revenir l'oignon, ajoute curry, tomates et pois chiches, mijote 15 min avec le lait de coco, sers sur riz."},
-{n:"Porridge banane-cannelle",e:"🥣",t:8,i:["flocon avoine","banane","lait","cannelle"],d:"Cuis les flocons dans le lait 5 min, ajoute la banane écrasée et la cannelle."},
-{n:"Yaourt grec gourmand",e:"🍓",t:5,i:["yaourt grec","flocon avoine","fruit rouge","miel"],d:"Yaourt grec, flocons, fruits rouges et un filet de miel — parfait au petit-déj ou en collation."},
-{n:"Pâtes complètes au thon",e:"🍝",t:20,i:["pate","thon","tomate","oignon"],d:"Sauce tomate-oignon express, thon égoutté, pâtes complètes al dente."},
-{n:"Buddha bowl patate douce",e:"🍠",t:35,i:["patate douce","quinoa","pois chiche","epinard","avocat"],d:"Patate douce rôtie au four, quinoa, pois chiches grillés, épinards frais et avocat."},
-{n:"Crevettes sautées au riz",e:"🍤",t:15,i:["crevette","riz","brocoli","ail","sauce soja"],d:"Wok : ail, crevettes 3 min, brocoli croquant, sauce soja, sers sur riz."},
-{n:"Poulet rôti haricots verts",e:"🍗",t:30,i:["poulet","haricot vert","ail","citron"],d:"Filets de poulet au four avec ail et citron, haricots verts vapeur."},
-{n:"Chili sin carne",e:"🌶️",t:30,i:["haricot rouge","tomate","oignon","poivron","riz"],d:"Fais revenir oignon et poivron, ajoute tomates, haricots rouges et épices chili, mijote 20 min."},
-{n:"Wrap poulet-avocat",e:"🌯",t:10,i:["tortilla","poulet","avocat","tomate","salade"],d:"Tortilla complète garnie de poulet grillé, avocat écrasé, tomate et salade croquante."},
-{n:"Soupe de légumes maison",e:"🥕",t:30,i:["carotte","poireau","courgette","oignon","pomme de terre"],d:"Fais suer l'oignon, ajoute les légumes en morceaux, couvre d'eau, 20 min, mixe."},
-{n:"Tofu sauté aux légumes",e:"🥦",t:20,i:["tofu","brocoli","carotte","sauce soja","riz"],d:"Tofu doré à la poêle, légumes croquants, sauce soja-gingembre, sers sur riz."},
-{n:"Salade grecque",e:"🥗",t:10,i:["concombre","tomate","feta","olive","oignon"],d:"Gros dés de concombre et tomate, feta, olives, oignon rouge, origan et huile d'olive."},
-{n:"Steak & patate douce",e:"🥩",t:25,i:["boeuf","patate douce","salade"],d:"Steak maigre grillé, frites de patate douce au four, salade verte."},
-{n:"Toast avocat-œuf",e:"🥑",t:10,i:["pain complet","avocat","oeuf","citron"],d:"Pain complet toasté, avocat écrasé au citron, œuf poché ou au plat par-dessus."},
-{n:"Papillote de poisson blanc",e:"🐟",t:25,i:["cabillaud","courgette","tomate","citron"],d:"Poisson en papillote avec courgette, tomate, citron et herbes, 18 min à 190 °C."},
-{n:"Poulet crémeux aux champignons",e:"🍄",t:25,i:["poulet","champignon","creme","oignon"],d:"Poulet saisi, champignons et oignon fondus, déglace et lie avec un peu de crème légère."},
-{n:"Smoothie vert banane",e:"🥤",t:5,i:["banane","epinard","yaourt grec","lait"],d:"Mixe banane, poignée d'épinards, yaourt grec et lait — vitaminé et rassasiant."}
-];
+let RECIPES=[{"n":"Bowl poulet-quinoa","e":"🥗","t":25,"i":["poulet","quinoa","avocat","tomate","concombre"],"d":"Le bowl complet et coloré du midi.","tags":["plat","protéiné"],"kcal":520,"p":38,"c":45,"fb":7,"steps":["Cuis le quinoa selon le paquet et laisse tiédir.","Coupe le poulet en dés, assaisonne et fais-le griller 6-8 min à la poêle.","Coupe avocat, tomate et concombre en morceaux.","Assemble le tout dans un bol, arrose de citron et d'un filet d'huile d'olive."],"srv":1,"q":["120 g","60 g cru","1/2","1","1/2"]},{"n":"Saumon rôti au brocoli","e":"🐟","t":20,"i":["saumon","brocoli","citron"],"d":"Un classique léger prêt en 20 minutes.","tags":["plat","protéiné","léger","rapide"],"kcal":420,"p":34,"c":10,"fb":5,"steps":["Préchauffe le four à 200 °C.","Dispose le saumon et les fleurettes de brocoli sur une plaque, filet d'huile, sel, poivre.","Ajoute des rondelles de citron et des herbes sur le poisson.","Enfourne 12-15 min, jusqu'à ce que le saumon se détache à la fourchette."],"srv":1,"q":["1 pavé (150 g)","250 g","1/2"]},{"n":"Omelette épinards-feta","e":"🍳","t":10,"i":["oeuf","epinard","feta"],"d":"Protéinée et prête en 10 minutes.","tags":["petit-déj","protéiné","rapide","végé"],"kcal":320,"p":22,"c":4,"fb":2,"steps":["Bats 3 œufs avec sel et poivre.","Fais tomber une poignée d'épinards 1-2 min à la poêle.","Verse les œufs, laisse prendre à feu moyen-doux.","Émiette la feta, replie l'omelette et sers."],"srv":1,"q":["3","1 poignée","30 g"]},{"n":"Poêlée dinde-courgettes","e":"🍗","t":20,"i":["dinde","courgette","oignon","poivron"],"d":"Poêlée express riche en protéines.","tags":["plat","protéiné","léger"],"kcal":350,"p":35,"c":12,"fb":4,"steps":["Coupe la dinde en lanières, sale et poivre.","Saisis-la 4-5 min à feu vif puis réserve.","Fais sauter courgette, oignon et poivron émincés 5-6 min.","Remets la dinde, ajoute paprika et un trait de citron, mélange 1 min."],"srv":2,"q":["250 g","1","1","1"]},{"n":"Salade de lentilles","e":"🥙","t":15,"i":["lentille","tomate","oignon","feta","concombre"],"d":"Riche en fibres, parfaite à emporter.","tags":["plat","végé","léger"],"kcal":380,"p":18,"c":45,"fb":12,"steps":["Cuis les lentilles (ou utilise des lentilles en conserve rincées) et laisse refroidir.","Coupe tomate, concombre et oignon en petits dés.","Prépare une vinaigrette moutarde-citron légère.","Mélange le tout et émiette la feta par-dessus."],"srv":2,"q":["200 g cuites","2","1/2","60 g","1/2"]},{"n":"Curry de pois chiches","e":"🍛","t":25,"i":["pois chiche","tomate","oignon","lait de coco","riz"],"d":"Végé, réconfortant et économique.","tags":["plat","végé"],"kcal":520,"p":16,"c":70,"fb":13,"steps":["Fais revenir l'oignon émincé 3 min avec le curry.","Ajoute tomates concassées et pois chiches égouttés.","Verse le lait de coco et laisse mijoter 15 min à feu doux.","Sers sur du riz avec de la coriandre fraîche."],"srv":2,"q":["400 g (1 boîte)","400 g concassées","1","200 ml","120 g cru"]},{"n":"Porridge banane-cannelle","e":"🥣","t":8,"i":["flocon avoine","banane","lait","cannelle"],"d":"Petit-déj chaud qui cale toute la matinée.","tags":["petit-déj","végé"],"kcal":340,"p":10,"c":58,"fb":7,"steps":["Verse les flocons et le lait dans une casserole.","Cuis 5 min à feu doux en remuant.","Écrase la banane et incorpore-la avec la cannelle.","Sers avec quelques oléagineux si tu veux du croquant."],"srv":1,"q":["50 g","1","250 ml","1 c. à c."]},{"n":"Yaourt grec gourmand","e":"🍓","t":5,"i":["yaourt grec","flocon avoine","fruit rouge","miel"],"d":"La collation protéinée en 5 minutes.","tags":["petit-déj","collation","protéiné","rapide","végé"],"kcal":280,"p":18,"c":35,"fb":5,"steps":["Verse le yaourt grec dans un bol.","Ajoute flocons d'avoine et fruits rouges.","Termine par un filet de miel."],"srv":1,"q":["150 g","30 g","80 g","1 c. à c."]},{"n":"Pâtes complètes au thon","e":"🍝","t":20,"i":["pate","thon","tomate","oignon"],"d":"Le dépanneur sain des soirs pressés.","tags":["plat","protéiné","rapide"],"kcal":520,"p":32,"c":68,"fb":9,"steps":["Cuis les pâtes complètes al dente.","Fais revenir l'oignon, ajoute les tomates concassées, 8-10 min.","Incorpore le thon égoutté à la sauce.","Mélange aux pâtes et poivre généreusement."],"srv":2,"q":["160 g crues","1 boîte (140 g)","400 g concassées","1"]},{"n":"Buddha bowl patate douce","e":"🍠","t":35,"i":["patate douce","quinoa","pois chiche","epinard","avocat"],"d":"Un bol végé complet et rassasiant.","tags":["plat","végé"],"kcal":560,"p":18,"c":75,"fb":14,"steps":["Rôtis la patate douce en cubes 25 min à 200 °C.","Cuis le quinoa ; fais griller les pois chiches à sec ou au four.","Assemble avec les épinards frais et l'avocat tranché.","Assaisonne d'une sauce citron-tahini ou d'un filet d'huile d'olive."],"srv":1,"q":["1 petite","50 g cru","100 g","1 poignée","1/2"]},{"n":"Crevettes sautées au riz","e":"🍤","t":15,"i":["crevette","riz","brocoli","ail","sauce soja"],"d":"Un wok léger en 15 minutes.","tags":["plat","protéiné","rapide","léger"],"kcal":430,"p":28,"c":55,"fb":5,"steps":["Cuis le riz selon le paquet.","Fais sauter l'ail 30 s, ajoute les crevettes 3 min.","Ajoute le brocoli en petites fleurettes, 3-4 min pour le garder croquant.","Déglace à la sauce soja et sers sur le riz."],"srv":1,"q":["150 g","70 g cru","150 g","1 gousse","1 c. à s."]},{"n":"Poulet rôti haricots verts","e":"🍗","t":30,"i":["poulet","haricot vert","ail","citron"],"d":"Simple, léger, efficace.","tags":["plat","protéiné","léger"],"kcal":380,"p":40,"c":12,"fb":5,"steps":["Préchauffe le four à 200 °C.","Dispose les filets de poulet avec ail, citron, sel et poivre.","Enfourne 20-25 min selon l'épaisseur.","Sers avec les haricots verts cuits à la vapeur."],"srv":1,"q":["1 filet (150 g)","200 g","2 gousses","1/2"]},{"n":"Chili sin carne","e":"🌶️","t":30,"i":["haricot rouge","tomate","oignon","poivron","riz"],"d":"Le végé qui cale les grandes faims.","tags":["plat","végé","protéiné"],"kcal":480,"p":20,"c":70,"fb":16,"steps":["Fais revenir oignon et poivron 5 min.","Ajoute tomates concassées, haricots rouges égouttés et épices chili.","Laisse mijoter 20 min à feu doux.","Sers sur du riz avec un peu de yaourt si tu veux adoucir."],"srv":3,"q":["400 g (1 boîte)","400 g concassées","1","1","180 g cru"]},{"n":"Wrap poulet-avocat","e":"🌯","t":10,"i":["tortilla","poulet","avocat","tomate","salade"],"d":"À rouler en 10 minutes chrono.","tags":["plat","rapide","protéiné"],"kcal":450,"p":30,"c":38,"fb":8,"steps":["Écrase l'avocat avec un trait de citron.","Tartine la tortilla, ajoute le poulet grillé en lanières.","Ajoute tomate et salade croquante.","Roule serré et coupe en deux."],"srv":1,"q":["1 grande","100 g","1/2","1/2","1 poignée"]},{"n":"Soupe de légumes maison","e":"🥕","t":30,"i":["carotte","poireau","courgette","oignon","pomme de terre"],"d":"Douce, légère et riche en fibres.","tags":["plat","végé","léger"],"kcal":180,"p":5,"c":30,"fb":7,"steps":["Fais suer l'oignon émincé 3 min.","Ajoute carotte, poireau, courgette et pomme de terre en morceaux.","Couvre d'eau, sale et laisse cuire 20 min.","Mixe jusqu'à la texture désirée."],"srv":4,"q":["3","1","1","1","2"]},{"n":"Tofu sauté aux légumes","e":"🥦","t":20,"i":["tofu","brocoli","carotte","sauce soja","riz"],"d":"Le végé protéiné au wok.","tags":["plat","végé","protéiné"],"kcal":420,"p":22,"c":50,"fb":7,"steps":["Presse le tofu puis coupe-le en cubes.","Fais-le dorer 5-6 min de tous côtés, réserve.","Saute brocoli et carotte 5 min, croquants.","Remets le tofu, sauce soja-gingembre, et sers sur riz."],"srv":2,"q":["200 g","250 g","1","2 c. à s.","120 g cru"]},{"n":"Salade grecque","e":"🥗","t":10,"i":["concombre","tomate","feta","olive","oignon"],"d":"Fraîcheur méditerranéenne en 10 minutes.","tags":["léger","végé","rapide"],"kcal":260,"p":8,"c":12,"fb":4,"steps":["Coupe concombre et tomates en gros dés.","Émince l'oignon rouge finement.","Ajoute feta en cubes et olives.","Assaisonne d'origan et d'huile d'olive."],"srv":2,"q":["1","3","100 g","une dizaine","1/2 rouge"]},{"n":"Steak & patate douce","e":"🥩","t":25,"i":["boeuf","patate douce","salade"],"d":"Protéines + frites saines au four.","tags":["plat","protéiné"],"kcal":520,"p":38,"c":42,"fb":6,"steps":["Coupe la patate douce en frites, huile légère, 25 min à 210 °C en retournant à mi-cuisson.","Sors le steak du frigo 15 min avant cuisson.","Saisis-le 2-3 min par face selon l'épaisseur, laisse reposer 3 min.","Sers avec une salade verte."],"srv":1,"q":["1 steak (150 g)","1 moyenne","1 poignée"]},{"n":"Toast avocat-œuf","e":"🥑","t":10,"i":["pain complet","avocat","oeuf","citron"],"d":"Le brunch express et complet.","tags":["petit-déj","rapide","végé","protéiné"],"kcal":360,"p":15,"c":28,"fb":8,"steps":["Toaste le pain complet.","Écrase l'avocat avec citron, sel et piment doux.","Cuis l'œuf au plat ou poché.","Assemble et poivre généreusement."],"srv":1,"q":["1-2 tranches","1/2","1","un trait"]},{"n":"Papillote de poisson blanc","e":"🐟","t":25,"i":["cabillaud","courgette","tomate","citron"],"d":"Zéro vaisselle, tout en légèreté.","tags":["plat","léger","protéiné"],"kcal":280,"p":30,"c":8,"fb":3,"steps":["Préchauffe le four à 190 °C.","Dépose le poisson sur du papier cuisson avec courgette et tomate en fines tranches.","Ajoute citron, herbes, filet d'huile ; ferme la papillote.","Enfourne 18 min et sers directement."],"srv":1,"q":["1 dos (150 g)","1/2","1","2 rondelles"]},{"n":"Poulet crémeux aux champignons","e":"🍄","t":25,"i":["poulet","champignon","creme","oignon"],"d":"Réconfortant sans excès.","tags":["plat","protéiné"],"kcal":400,"p":38,"c":10,"fb":2,"steps":["Saisis les morceaux de poulet 5-6 min, réserve.","Fais fondre oignon et champignons émincés 5 min.","Remets le poulet, ajoute un peu de crème légère.","Laisse épaissir 3-4 min à feu doux et rectifie l'assaisonnement."],"srv":2,"q":["2 filets","250 g","10 cl légère","1"]},{"n":"Smoothie vert banane","e":"🥤","t":5,"i":["banane","epinard","yaourt grec","lait"],"d":"La collation vitaminée à boire.","tags":["collation","petit-déj","rapide","végé"],"kcal":220,"p":12,"c":35,"fb":4,"steps":["Mets banane, une poignée d'épinards, yaourt grec et lait dans le blender.","Mixe 30-45 s jusqu'à texture lisse.","Ajuste l'épaisseur avec un peu de lait."],"srv":1,"q":["1","1 poignée","2 c. à s.","150 ml"]},{"n":"Banana bread sain","e":"🍌","t":50,"i":["banane","flocon avoine","oeuf","yaourt grec","miel","cannelle"],"d":"Moelleux, sans sucre raffiné.","tags":["sucré","petit-déj","végé"],"kcal":210,"p":6,"c":32,"fb":4,"steps":["Préchauffe le four à 180 °C.","Écrase 3 bananes bien mûres ; fouette avec 2 œufs, le yaourt et 1 c. à s. de miel.","Incorpore 180 g de flocons mixés en farine, la cannelle et 1/2 sachet de levure.","Verse dans un moule à cake et cuis 40-45 min (test du cure-dent)."],"srv":8,"q":["3 mûres","180 g","2","100 g","1 c. à s.","1 c. à c."]},{"n":"Cookies banane-avoine (3 ingrédients)","e":"🍪","t":15,"i":["banane","flocon avoine","chocolat noir"],"d":"Le goûter le plus simple du monde.","tags":["sucré","collation","rapide","végé"],"kcal":180,"p":4,"c":30,"fb":4,"steps":["Préchauffe le four à 180 °C.","Écrase 2 bananes, mélange avec 120 g de flocons d'avoine.","Ajoute le chocolat noir concassé.","Forme des tas sur une plaque et cuis 12 min."],"srv":10,"q":["2 mûres","120 g","40 g"]},{"n":"Muffins banane-carotte","e":"🧁","t":35,"i":["banane","carotte","flocon avoine","oeuf","cannelle"],"d":"Des muffins qui glissent des légumes en douce.","tags":["sucré","collation","végé"],"kcal":160,"p":5,"c":25,"fb":3,"steps":["Préchauffe le four à 180 °C.","Mixe 2 bananes avec 2 œufs.","Ajoute 1 carotte râpée, 150 g de flocons mixés, cannelle et 1/2 sachet de levure.","Répartis en moules à muffins et cuis 20 min."],"srv":8,"q":["2","1 râpée","150 g","2","1 c. à c."]},{"n":"Pancakes banane 2 ingrédients","e":"🥞","t":10,"i":["banane","oeuf","flocon avoine"],"d":"Petit-déj express sans farine.","tags":["petit-déj","rapide","végé"],"kcal":280,"p":14,"c":35,"fb":5,"steps":["Mixe 1 banane avec 2 œufs (et 2 c. à s. de flocons pour la tenue).","Chauffe une poêle légèrement huilée à feu moyen.","Verse de petites louches, 2 min par face.","Sers avec des fruits frais."],"srv":1,"q":["1","2","2 c. à s."]},{"n":"Fondant banane-cacao sans sucre ajouté","e":"🍫","t":35,"i":["banane","oeuf","cacao","compote de pomme","poudre d amande"],"d":"Le plaisir chocolat sans sucre raffiné.","tags":["sucré","végé"],"kcal":190,"p":6,"c":24,"fb":5,"steps":["Préchauffe le four à 180 °C.","Mixe 3 bananes, 2 œufs et 100 g de compote sans sucre.","Incorpore 40 g de cacao non sucré et 60 g de poudre d'amande.","Cuis 25 min — le centre doit rester fondant."],"srv":8,"q":["3","2","40 g","100 g","60 g"]},{"n":"Energy balls dattes-cacao","e":"🍡","t":15,"i":["datte","flocon avoine","amande","cacao"],"d":"L'énergie de poche pour les fringales.","tags":["collation","végé","rapide"],"kcal":170,"p":4,"c":26,"fb":4,"steps":["Mixe 150 g de dattes dénoyautées avec 80 g de flocons et 50 g d'amandes.","Ajoute 1 c. à s. de cacao et mixe encore.","Forme des billes avec les mains légèrement humides.","Laisse prendre 30 min au frais."],"srv":12,"q":["150 g","80 g","50 g","1 c. à s."]},{"n":"Barres avoine-banane maison","e":"🥜","t":30,"i":["flocon avoine","banane","raisin sec","amande"],"d":"Des barres de céréales sans additifs.","tags":["collation","végé"],"kcal":190,"p":5,"c":32,"fb":4,"steps":["Préchauffe le four à 180 °C.","Écrase 2 bananes ; mélange avec 200 g de flocons, raisins secs et amandes concassées.","Tasse fermement dans un plat chemisé.","Cuis 20 min, laisse refroidir complètement avant de découper."],"srv":8,"q":["200 g","2","50 g","40 g"]},{"n":"Pomme au four à la cannelle","e":"🍎","t":25,"i":["pomme","cannelle","noix"],"d":"Le dessert chaud le plus simple.","tags":["sucré","collation","léger","végé"],"kcal":160,"p":2,"c":28,"fb":5,"steps":["Préchauffe le four à 180 °C.","Évide la pomme sans la percer complètement.","Garnis de cannelle et de noix concassées.","Cuis 20 min jusqu'à ce qu'elle soit fondante."],"srv":1,"q":["1","1 pincée","4-5"]},{"n":"Nice cream banane","e":"🍦","t":5,"i":["banane","yaourt grec"],"d":"Une « glace » minute sans sorbetière.","tags":["sucré","collation","rapide","léger","végé"],"kcal":150,"p":6,"c":28,"fb":3,"steps":["Congèle des rondelles de banane à l'avance.","Mixe-les avec 2 c. à s. de yaourt grec.","Racle les bords et mixe à nouveau jusqu'à texture crémeuse.","Sers immédiatement."],"srv":1,"q":["1 congelée","2 c. à s."]},{"n":"Pois chiches rôtis croustillants","e":"🫘","t":30,"i":["pois chiche","paprika","huile olive"],"d":"L'anti-chips maison.","tags":["collation","végé","léger"],"kcal":180,"p":8,"c":22,"fb":7,"steps":["Préchauffe le four à 200 °C.","Égoutte et sèche très bien les pois chiches.","Enrobe d'un filet d'huile et de paprika.","Rôtis 25 min en remuant à mi-cuisson."],"srv":2,"q":["400 g (1 boîte)","1 c. à c.","1 filet"]},{"n":"Crudités & houmous","e":"🥕","t":10,"i":["carotte","concombre","poivron","pois chiche"],"d":"Le croquant qui cale sans peser.","tags":["collation","végé","léger","rapide"],"kcal":220,"p":7,"c":22,"fb":8,"steps":["Taille carotte, concombre et poivron en bâtonnets.","Dispose autour d'un bol de houmous.","C'est prêt — parfait devant un film."],"srv":2,"q":["2","1/2","1","150 g en houmous"]},{"n":"Houmous maison","e":"🫓","t":10,"i":["pois chiche","citron","ail","puree de sesame","huile olive"],"d":"Crémeux, sans additifs.","tags":["sauce","végé","rapide"],"kcal":160,"p":6,"c":14,"fb":5,"steps":["Égoutte les pois chiches en gardant un peu du jus.","Mixe-les avec citron, ail et purée de sésame.","Détends avec le jus réservé jusqu'à texture crémeuse.","Sale, et termine d'un filet d'huile d'olive."],"srv":4,"q":["250 g","1","1 gousse","1 c. à s.","1 filet"]},{"n":"Sauce yaourt aux herbes","e":"🥣","t":5,"i":["yaourt grec","citron","ail","ciboulette"],"d":"Remplace la mayo partout.","tags":["sauce","léger","rapide","végé"],"kcal":45,"p":4,"c":4,"fb":0,"steps":["Mélange le yaourt grec avec le jus de citron.","Ajoute l'ail pressé et la ciboulette ciselée.","Sale, poivre, et laisse reposer 10 min au frais."],"srv":4,"q":["150 g","1/2","1 gousse","quelques brins"]},{"n":"Vinaigrette légère moutarde-miel","e":"🥗","t":5,"i":["moutarde","miel","citron","huile olive"],"d":"Deux fois moins d'huile, tout le goût.","tags":["sauce","léger","rapide","végé"],"kcal":70,"p":0,"c":3,"fb":0,"steps":["Mélange moutarde et miel.","Ajoute le jus de citron.","Émulsionne avec l'huile d'olive en fouettant."],"srv":2,"q":["1 c. à c.","1/2 c. à c.","1/2","1 c. à s."]},{"n":"Guacamole allégé","e":"🥑","t":10,"i":["avocat","tomate","citron","oignon","coriandre"],"d":"Le dip vert de l'apéro léger.","tags":["sauce","végé","rapide"],"kcal":120,"p":2,"c":7,"fb":5,"steps":["Écrase l'avocat avec le jus de citron.","Ajoute tomate et oignon en petits dés.","Termine avec la coriandre ciselée et une pincée de sel.","Version allégée : remplace la moitié de l'avocat par des petits pois mixés."],"srv":2,"q":["1","1/2","1/2","1/4","quelques brins"]},{"n":"Sauce tomate express maison","e":"🍅","t":20,"i":["tomate","ail","oignon","basilic"],"d":"Sans sucre caché, prête en 20 min.","tags":["sauce","végé","léger"],"kcal":70,"p":2,"c":10,"fb":3,"steps":["Fais fondre oignon et ail émincés 3 min.","Ajoute les tomates concassées.","Mijote 15 min à feu doux.","Ajoute le basilic en fin de cuisson."],"srv":3,"q":["400 g concassées","1 gousse","1","quelques feuilles"]},{"n":"Tzatziki","e":"🥒","t":10,"i":["yaourt grec","concombre","ail","citron","aneth"],"d":"Frais, protéiné, parfait en dip.","tags":["sauce","léger","rapide","végé"],"kcal":60,"p":4,"c":4,"fb":1,"steps":["Râpe le demi-concombre et presse-le fort pour retirer l'eau.","Mélange au yaourt grec avec ail pressé et citron.","Ajoute l'aneth, sale et laisse reposer au frais 15 min."],"srv":4,"q":["200 g","1/2","1 gousse","1/2","quelques brins"]},{"n":"Overnight oats","e":"🥣","t":10,"i":["flocon avoine","yaourt grec","lait","graine de chia"],"d":"Le petit-déj qui se prépare tout seul pendant la nuit. (adapté de Maria Lucey RD)","tags":["petit-déj","protéiné","végé","rapide"],"kcal":340,"p":18,"c":45,"fb":8,"steps":["Le soir, mélange flocons, yaourt, lait et graines dans un bocal.","Ferme et laisse au réfrigérateur toute la nuit.","Au matin, détends avec un peu de lait si tu préfères plus fluide.","Garnis de fruits frais ou d'oléagineux, en variant les plaisirs."],"srv":1,"q":["50 g","60 g","120 ml","1 c. à s."]},{"n":"Porridge protéiné aux blancs d'œuf","e":"🥣","t":15,"i":["flocon avoine","lait","blanc d oeuf","beurre de cacahuete","graine de chia","fruit rouge"],"d":"Le porridge qui gonfle et rassasie deux fois plus. (adapté de Maria Lucey RD)","tags":["petit-déj","protéiné"],"kcal":380,"p":26,"c":42,"fb":8,"steps":["Cuis les flocons dans le lait à feu moyen 3-5 min, en gardant le mélange bien moelleux.","Bats les blancs d'œufs en mousse légère.","Incorpore-les au porridge en remuant sans arrêt jusqu'à ce qu'il gonfle, ~3 min.","Hors du feu, couvre 2-3 min, puis garnis de beurre de cacahuète, graines et fruits rouges."],"srv":1,"q":["40 g","200 ml","2","1 c. à s.","1 c. à s.","1 poignée"]},{"n":"Omelette express au micro-ondes","e":"🍳","t":5,"i":["oeuf","lait","epinard","champignon","poivron","feta"],"d":"L'omelette de bureau, prête en 3 minutes. (adapté de Maria Lucey RD)","tags":["petit-déj","rapide","protéiné","végé"],"kcal":260,"p":20,"c":5,"fb":1,"steps":["Bats les œufs avec le lait et les légumes en petits dés dans un bol adapté.","Cuis ~40 s au micro-ondes puissance moyenne-forte.","Ramène les bords pris vers le centre à la fourchette.","Prolonge la cuisson en douceur ~1 min 30, laisse reposer 1 min et sers."],"srv":1,"q":["2","60 ml","1 poignée","3-4","1/4","1 c. à s."]},{"n":"Pancakes au yaourt grec","e":"🥞","t":15,"i":["flocon avoine","oeuf","yaourt grec","vanille"],"d":"Des pancakes riches en protéines, ultra moelleux. (adapté de Maria Lucey RD)","tags":["petit-déj","protéiné","végé"],"kcal":320,"p":22,"c":38,"fb":4,"steps":["Mixe les flocons d'avoine en farine fine.","Fouette avec les œufs, le yaourt grec et la vanille.","Cuis de petites louches 2-3 min par face à feu moyen.","Empile et garnis de fruits ou d'un filet de sirop d'érable."],"srv":1,"q":["40 g","2","100 g","1/2 c. à c."]},{"n":"Frittata patate douce & feta","e":"🍳","t":55,"i":["patate douce","oeuf","epinard","feta","noisette","oignon"],"d":"La frittata du dimanche, bonne chaude ou froide. (adapté de Maria Lucey RD)","tags":["plat","protéiné","végé"],"kcal":340,"p":18,"c":22,"fb":4,"steps":["Préchauffe le four à 200 °C ; fais fondre oignon et ail à la poêle.","Ajoute la patate douce en fines tranches et cuis ~10 min.","Incorpore épinards et noisettes 1-2 min, puis verse les œufs battus au lait.","Émiette la feta et enfourne 35-40 min jusqu'à ce que ce soit doré et pris."],"srv":5,"q":["450 g","8","2-3 poignées","100 g","30 g","1-2 rouges"]},{"n":"Bouchées de halloumi au four","e":"🧀","t":35,"i":["halloumi","oeuf","chapelure","parmesan","sesame","miel"],"d":"Croustillant dehors, fondant dedans. (adapté de Maria Lucey RD)","tags":["collation","végé"],"kcal":260,"p":14,"c":12,"fb":1,"steps":["Préchauffe le four à 220 °C.","Trempe les cubes de halloumi dans l'œuf battu.","Roule-les dans un mélange chapelure-parmesan-sésame-paprika.","Enfourne 10-12 min, retourne, poursuis 10 min ; sers avec un miel relevé de piment."],"srv":6,"q":["400 g","2","1 tasse","50 g","3 c. à s.","pour servir"]},{"n":"Dip pistaches-feta","e":"🥣","t":15,"i":["pistache","feta","yaourt grec","citron","aneth","coriandre","ail"],"d":"Le dip qui change du houmous. (adapté de Maria Lucey RD)","tags":["sauce","végé"],"kcal":210,"p":8,"c":6,"fb":2,"steps":["Mixe les pistaches avec l'huile d'olive 30 s.","Ajoute feta, yaourt, herbes fraîches, ail et citron.","Mixe jusqu'à texture homogène.","Goûte avant de saler — la feta l'est déjà."],"srv":4,"q":["100 g","200 g","4-5 c. à s.","1/2 + zeste","1 poignée","2 poignées","1 gousse"]},{"n":"Sandwich poulet-curry crémeux","e":"🥪","t":5,"i":["poulet","yaourt","curry","pain complet","roquette","chutney de mangue"],"d":"Un sandwich crémeux façon coronation. (adapté de Maria Lucey RD)","tags":["plat","rapide","protéiné"],"kcal":380,"p":28,"c":40,"fb":6,"steps":["Mélange le poulet cuit effiloché avec yaourt, pointe de curry et chutney de mangue.","Poivre généreusement.","Garnis le pain complet avec la préparation et la roquette.","Accompagne de crudités pour compléter l'assiette."],"srv":1,"q":["75 g","1 c. à s.","1/4 c. à c.","2 tranches","1 poignée","1 c. à c."]},{"n":"Curry doux de crevettes","e":"🍤","t":45,"i":["crevette","oignon","poivron","tomate","lait de coco","riz"],"d":"Un curry parfumé mais tout doux. (adapté de Maria Lucey RD)","tags":["plat","protéiné"],"kcal":480,"p":28,"c":50,"fb":4,"steps":["Fais revenir oignons et poivrons 5 min avec l'ail.","Ajoute les épices et enrobe bien.","Verse tomates concassées et lait de coco léger, porte à frémissement.","Ajoute les crevettes et laisse mijoter ~20 min pour épaissir ; sers sur riz."],"srv":4,"q":["450 g","2","2","400 g concassées","400 ml léger","240 g cru"]},{"n":"Saumon teriyaki","e":"🐟","t":35,"i":["saumon","pak choi","sauce soja","gingembre","ail","riz"],"d":"Le poisson laqué maison, sans bouteille de sauce industrielle. (adapté de Maria Lucey RD)","tags":["plat","protéiné","léger"],"kcal":520,"p":36,"c":55,"fb":4,"steps":["Fais griller les filets de saumon 15-20 min selon l'épaisseur.","Pendant ce temps, porte à ébullition soja, ail, gingembre et une pointe de sucre, puis laisse réduire 5 min.","Cuis le riz et fais cuire le pak choï vapeur, tiges d'abord puis feuilles.","Nappe le saumon de sauce et sers avec riz et pak choï."],"srv":4,"q":["4 pavés","4","50 ml","1 morceau (pouce)","2 gousses","240 g cru"]},{"n":"Poulet sauce satay allégée","e":"🍗","t":30,"i":["poulet","beurre de cacahuete","sauce soja","cola sans sucre","riz","brocoli"],"d":"La sauce satay bluffante au cola sans sucre. (adapté de Maria Lucey RD)","tags":["plat","protéiné"],"kcal":550,"p":42,"c":45,"fb":5,"steps":["Fais dorer le poulet en morceaux 3-5 min ; cuis le riz à part.","Verse le cola sans sucre dans la poêle et laisse frémir.","Ajoute beurre de cacahuète, soja, ail, paprika et gingembre, mélange bien.","Laisse épaissir 10-15 min à petit feu et sers avec riz et brocoli vapeur."],"srv":2,"q":["2 filets","2 c. à s.","1 c. à s.","330 ml","120 g cru","250 g"]},{"n":"Butter chicken allégé","e":"🍛","t":40,"i":["poulet","tomate","oignon","ail","gingembre","garam masala","beurre d amande","riz"],"d":"Le « fake-away » indien, crémeux sans crème. (adapté de Maria Lucey RD)","tags":["plat","protéiné"],"kcal":460,"p":38,"c":20,"fb":4,"steps":["Fais dorer le poulet en cubes 3-5 min, réserve.","Fais fondre oignon, ail, gingembre et épices ~3 min.","Remets le poulet, verse la passata et laisse mijoter 20 min.","Lie au beurre d'amande hors du feu, parsème de coriandre et sers avec du riz."],"srv":4,"q":["4 filets","680 ml passata","1","3 gousses","1 c. à s.","2 c. à c.","2 c. à s.","240 g cru"]},{"n":"Bowl saumon, riz & sauce sésame-miso","e":"🍚","t":30,"i":["saumon","riz","concombre","avocat","epinard","puree de sesame","miso"],"d":"Un poke-bowl chaud à la sauce magique. (adapté de Maria Lucey RD)","tags":["plat","protéiné"],"kcal":560,"p":34,"c":52,"fb":8,"steps":["Cuis le saumon au four 12-15 min à 190 °C ; cuis le riz.","Fouette purée de sésame, miso, soja, un peu de vinaigre de riz et d'ail.","Détends la sauce à l'eau, cuillère par cuillère, jusqu'à consistance nappante.","Monte le bol : riz, crudités, épinards, avocat, saumon, sauce généreuse."],"srv":1,"q":["1 pavé","1/2 tasse","1/2","1/4","1 poignée","1 c. à s.","1/2 c. à s."]},{"n":"Muffins banane-chocolat complets","e":"🧁","t":40,"i":["banane","farine complete","oeuf","chocolat noir","cannelle","lait"],"d":"Des muffins gourmands à la farine complète. (adapté de Maria Lucey RD)","tags":["sucré","collation","végé"],"kcal":220,"p":6,"c":32,"fb":3,"steps":["Préchauffe le four à 180 °C et prépare un moule à muffins.","Mélange les ingrédients secs (farine complète, cacao ou pépites, levure, cannelle).","Écrase les bananes, fouette avec œufs et lait, puis combine sec et humide sans trop mélanger.","Répartis, ajoute quelques pépites dessus et cuis 20-25 min (test du cure-dent)."],"srv":12,"q":["2 grosses","200 g","2","90 g pépites","1 c. à c.","170 ml"]},{"n":"Dattes façon Snickers","e":"🍫","t":15,"i":["datte","beurre de cacahuete","noix","chocolat noir"],"d":"La confiserie saine qui imite la barre chocolatée. (adapté de Maria Lucey RD)","tags":["collation","sucré","végé","rapide"],"kcal":200,"p":4,"c":28,"fb":3,"steps":["Fends les dattes et retire les noyaux.","Garnis chacune de beurre de cacahuète et de noix concassées.","Fais fondre le chocolat noir par intervalles de 30 s au micro-ondes.","Nappe les dattes, ajoute une pincée de fleur de sel et laisse prendre au frais."],"srv":15,"q":["15","60 g","60 g","85 g"]},{"n":"Boules d'énergie amande & protéines","e":"🍡","t":20,"i":["beurre d amande","poudre d amande","proteine en poudre","miel","chocolat noir"],"d":"La collation protéinée qui se prépare en avance. (adapté de Maria Lucey RD)","tags":["collation","protéiné","sucré"],"kcal":210,"p":9,"c":16,"fb":3,"steps":["Mélange beurre d'amande, poudre d'amande, protéine en poudre et miel jusqu'à obtenir une pâte.","Incorpore les pépites de chocolat.","Façonne des billes d'une cuillère à soupe.","Laisse prendre 1 h au frais ; se conserve une semaine en boîte hermétique."],"srv":12,"q":["1 tasse","1 tasse","1 dose","60 ml","1/2 tasse pépites"]},{"n":"Cookies avoine-cacahuète","e":"🍪","t":25,"i":["farine d avoine","beurre de cacahuete","miel","cannelle"],"d":"Des cookies express à 4 ingrédients. (adapté de Maria Lucey RD)","tags":["sucré","collation","végé"],"kcal":220,"p":7,"c":24,"fb":3,"steps":["Préchauffe le four à 180 °C.","Mélange farine d'avoine, cannelle et une pincée de sel, puis incorpore beurre de cacahuète et miel jusqu'à former une pâte.","Roule des boules, aplatis-les légèrement sur une plaque.","Cuis 10-12 min et laisse refroidir sur une grille."],"srv":12,"q":["270 g","120 g","120 ml","1 c. à c."]},{"n":"Toast avocat-cottage","e":"🥑","t":8,"srv":1,"i":["pain complet","fromage cottage","avocat","sirop sans sucre","piment en flocons"],"q":["1 tranche","3/4 tasse (1 %)","1/2","un filet","1 pincée"],"d":"Le toast déjeuner sucré-piquant, étonnamment protéiné. (adapté du coffret Togetfit × Nova Pharma)","steps":["Fais griller le pain.","Écrase l'avocat dessus.","Répartis le fromage cottage, ajoute un filet de sirop sans sucre et les piments en flocons."],"tags":["petit-déj","protéiné","rapide","végé"],"kcal":311,"p":30,"c":25,"fb":7},{"n":"Omelette œufs & fruits","e":"🍳","t":12,"srv":1,"i":["oeuf","fromage léger","epinard","champignon","poivron","fruit"],"q":["3","40 g râpé","1 poignée","2","1/4","1/2 tasse"],"d":"L'omelette du déjeuner avec sa portion de fruits. (adapté du coffret Togetfit × Nova Pharma)","steps":["Fais revenir épinards, champignons et poivron dans un léger corps gras.","Verse les œufs battus et laisse prendre à feu moyen.","Quand c'est presque cuit, ajoute le fromage pour qu'il fonde et replie.","Sers avec les fruits frais à côté."],"tags":["petit-déj","protéiné","rapide","léger"],"kcal":338,"p":30,"c":30,"fb":4},{"n":"Bol yogourt grec gourmand","e":"🍨","t":5,"srv":1,"i":["yaourt grec","granola","chocolat noir","fruit rouge","beurre de noix"],"q":["1 tasse (0 %)","25 g","2 carrés","1/4 tasse","15 g"],"d":"Le bol déjeuner qui a un goût de dessert. (adapté du coffret Togetfit × Nova Pharma)","steps":["Verse le yogourt dans un bol.","Ajoute granola, baies, chocolat râpé et beurre de noix.","Mélange (ou pas !) et déguste."],"tags":["petit-déj","protéiné","rapide","végé","sucré"],"kcal":335,"p":30,"c":25,"fb":4},{"n":"Gruau protéiné choco-framboise","e":"🥣","t":10,"srv":1,"i":["flocon avoine","proteine en poudre","lait d amande","graine de lin","framboise","chocolat noir"],"q":["30 g","1 dose","1 tasse","1 c. à thé","100 g","1 carré"],"d":"L'overnight oats version protéinée, à préparer la veille. (adapté du coffret Togetfit × Nova Pharma)","steps":["Dans un pot Mason, mélange gruau, lait, graines de lin, framboises et protéine en poudre.","Mélange bien et réfrigère au moins 2 h (ou la nuit).","Ajoute le chocolat noir au moment de servir."],"tags":["petit-déj","protéiné","végé"],"kcal":327,"p":35,"c":27,"fb":7},{"n":"Sandwich déjeuner","e":"🥯","t":10,"srv":1,"i":["muffin anglais","oeuf","fromage léger","bacon de dinde","epinard","tomate","mayo épicée"],"q":["1 (blé)","1","40 g","2 tranches cuites","quelques feuilles","2 rondelles","1 c. à thé"],"d":"Le breakfast sandwich maison, bien meilleur que celui du drive. (adapté du coffret Togetfit × Nova Pharma)","steps":["Fais griller le muffin anglais.","Pendant ce temps, cuis l'œuf et prépare les garnitures.","Assemble : mayo épicée, œuf, fromage, bacon de dinde, épinards et tomate."],"tags":["petit-déj","protéiné","rapide"],"kcal":322,"p":30,"c":23,"fb":3},{"n":"Pudding de chia","e":"🫐","t":10,"srv":2,"i":["graine de chia","vanille","sirop d érable sans sucre","lait d amande","yaourt grec","fraise","granola"],"q":["1/4 tasse","1/2 c. à thé","1 c. à s.","1 tasse","1/2 tasse / portion","100 g / portion","20 g / portion"],"d":"Se prépare la veille, se déguste sans culpabilité. (adapté du coffret Togetfit × Nova Pharma)","steps":["Répartis chia, vanille, sirop et lait dans 2 pots Mason et mélange bien.","Ajoute le yogourt et les fraises dans chaque pot.","Réfrigère au moins 2 h, idéalement la nuit.","Ajoute le granola au moment de servir pour le croquant."],"tags":["petit-déj","collation","protéiné","végé"],"kcal":318,"p":25,"c":30,"fb":10},{"n":"Crêpes au fromage cottage","e":"🥞","t":20,"srv":2,"i":["flocon avoine","fromage cottage","oeuf","lait d amande","sirop d érable sans sucre","vanille","poudre à pâte"],"q":["1 tasse","1/2 tasse","2","4 c. à s.","1 c. à s.","1 c. à s.","1/2 c. à thé"],"d":"Des crêpes moelleuses mixées en 30 secondes. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mets tous les ingrédients au mélangeur et mixe jusqu'à obtenir une pâte lisse.","Chauffe une poêle légèrement graissée à feu moyen.","Verse des portions d'environ 1/4 tasse et cuis 2 min par face.","Sers avec un sirop sans sucre et des fruits."],"tags":["petit-déj","protéiné","végé"],"kcal":302,"p":22,"c":34,"fb":4},{"n":"Bagel BLT","e":"🥯","t":10,"srv":1,"i":["bagel mince","oeuf","fromage léger","avocat","bacon de dinde","laitue","tomate"],"q":["1","2","40 g","30 g","1 tranche cuite","quelques feuilles","2 rondelles"],"d":"Le BLT déjeuner, version équilibrée. (adapté du coffret Togetfit × Nova Pharma)","steps":["Fais griller le bagel.","Cuis les œufs à ta façon pendant ce temps.","Assemble avec fromage, avocat, bacon de dinde, laitue et tomate."],"tags":["petit-déj","protéiné","rapide"],"kcal":334,"p":25,"c":24,"fb":5},{"n":"Meal prep viande & riz","e":"🍱","t":10,"srv":1,"i":["poulet","riz","légumes","vinaigrette"],"q":["100 g cuit","120 g cuit","1-2 tasses","30 ml"],"d":"La formule meal prep de base : une protéine, un féculent, des légumes. (adapté du coffret Togetfit × Nova Pharma)","steps":["Répartis la protéine cuite, le riz et les légumes dans un contenant.","Garde la vinaigrette à part et ajoute-la au moment de manger.","Varie viande, féculent et légumes chaque semaine pour ne pas te lasser."],"tags":["plat","protéiné","rapide"],"kcal":321,"p":35,"c":34,"fb":4},{"n":"Bol fiesta","e":"🌶️","t":15,"srv":1,"i":["poulet","feta","riz","haricot noir","maïs","laitue","tomate","mayo épicée"],"q":["100 g","15 g","80 g cuit","2 c. à s.","2 c. à s.","1 poignée","1/2","2 c. à s."],"d":"Un bol tex-mex coloré, prêt en un rien de temps. (adapté du coffret Togetfit × Nova Pharma)","steps":["Prépare tous les ingrédients : poulet grillé tranché, riz, légumes coupés.","Assemble le bol en sections.","Nappe de mayo épicée et sers."],"tags":["plat","protéiné"],"kcal":335,"p":33,"c":35,"fb":6},{"n":"Assiette express du garde-manger","e":"🧀","t":5,"srv":1,"i":["viande froide","fromage léger","raisin","craquelin","houmous","crudités"],"q":["4 tranches","50 g","1/2 tasse","8","1 c. à s.","à volonté"],"d":"Le plan B parfait quand la meal prep est finie. (adapté du coffret Togetfit × Nova Pharma)","steps":["Assemble une assiette avec ce que tu as sous la main : protéine froide, fromage, fruits, craquelins.","Ajoute houmous et crudités pour compléter.","Zéro cuisson, zéro excuse."],"tags":["plat","rapide","protéiné"],"kcal":307,"p":31,"c":30,"fb":4},{"n":"Wrap au poulet buffalo","e":"🌯","t":10,"srv":1,"i":["tortilla","poulet","céleri","laitue","yaourt grec","sauce buffalo"],"q":["1 (blé)","100 g en cubes","1/2 branche","2 feuilles","2 c. à s.","1 c. à thé"],"d":"Le wrap crémeux-piquant qui remplace le resto. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mélange poulet, céleri, yogourt grec, sauce buffalo, sel et poivre.","Garnis la tortilla du mélange et ajoute la laitue.","Roule serré et déguste."],"tags":["plat","protéiné","rapide"],"kcal":335,"p":35,"c":27,"fb":5},{"n":"Riz frit à la chinoise","e":"🍚","t":15,"srv":1,"i":["poulet","riz","macédoine de légumes","sauce soja","sriracha"],"q":["100 g en cubes","100 g cuit","1/2 tasse","au goût","au goût"],"d":"Le take-out chinois maison, en un seul poêlon. (adapté du coffret Togetfit × Nova Pharma)","steps":["Dans une poêle à feu moyen, réchauffe riz, poulet et légumes avec un peu d'eau.","Quand les légumes sont cuits, ajoute la sauce soja et mélange bien.","Sers avec de la sriracha au goût."],"tags":["plat","protéiné","rapide"],"kcal":340,"p":35,"c":35,"fb":4},{"n":"Pizza chrono sur tortilla","e":"🍕","t":15,"srv":1,"i":["tortilla","sauce tomate","poulet","fromage léger","légumes"],"q":["1 (blé)","2 c. à s.","50 g","50 g","au choix"],"d":"L'envie de pizza réglée en 15 minutes. (adapté du coffret Togetfit × Nova Pharma)","steps":["Préchauffe le four à 180 °C (350 °F).","Garnis la tortilla : sauce, poulet, légumes, fromage.","Enfourne jusqu'à ce que le fromage fonde, puis passe sous le gril pour gratiner."],"tags":["plat","protéiné","rapide"],"kcal":352,"p":40,"c":30,"fb":5},{"n":"Bol Big Mac","e":"🍔","t":15,"srv":1,"i":["boeuf haché extra-maigre","riz","fromage léger","salade","tomate","cornichon","sauce big mac"],"q":["100 g cuit","70 g cuit","30 g","1 poignée","1/2","1 en rondelles","2 c. à s."],"d":"Tout le goût du burger culte, dans un bol équilibré. (adapté du coffret Togetfit × Nova Pharma)","steps":["Prépare la sauce Big Mac allégée (voir la recette dédiée).","Assemble le bol : salade, riz, bœuf, fromage, tomate et cornichons.","Nappe de sauce et bon appétit."],"tags":["plat","protéiné"],"kcal":331,"p":34,"c":25,"fb":3},{"n":"Galettes de saumon","e":"🐟","t":25,"srv":2,"i":["panko","farine","poivron","saumon","oeuf","yaourt grec","sauce worcestershire"],"q":["1/2 tasse","1/4 tasse","1","140 g cuit","1 battu","1/4 tasse","1 c. à s."],"d":"Des croquettes de poisson dorées, liées au yogourt. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mets tous les ingrédients au robot et pulse jusqu'à ce que le mélange se tienne.","Façonne des galettes.","Dore-les à la poêle légèrement huilée, quelques minutes par face.","Sers sur une salade ou des légumes grillés."],"tags":["plat","protéiné"],"kcal":320,"p":26,"c":25,"fb":3},{"n":"Fajitas au poulet","e":"🌮","t":10,"srv":1,"i":["tortilla","poulet","poivron","oignon","yaourt grec","salsa"],"q":["1 grande (blé)","100 g aux épices fajitas","1 tasse sautés","avec les poivrons","1 c. à s.","au goût"],"d":"Des fajitas garnies, sans crème sure. (adapté du coffret Togetfit × Nova Pharma)","steps":["Fais sauter poivrons et oignons ; réchauffe le poulet aux épices fajitas.","Garnis la tortilla, ajoute yogourt grec (à la place de la crème sure) et salsa.","Roule bien et déguste."],"tags":["plat","protéiné","rapide"],"kcal":335,"p":30,"c":25,"fb":6},{"n":"Pommes & dip protéiné","e":"🍎","t":5,"srv":1,"i":["pomme","yaourt grec","proteine en poudre","cannelle","sirop d érable sans sucre","poudre de cacahuete"],"q":["1 en quartiers","100 g (ou cottage)","1/2 dose","1 pincée","un filet","1 c. à thé"],"d":"La collation trempette qui cale vraiment. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mélange yogourt, protéine, cannelle, sirop et poudre de cacahuète dans un petit bol.","Coupe la pomme en quartiers.","Trempe et savoure."],"tags":["collation","protéiné","rapide","sucré","végé"],"kcal":206,"p":25,"c":30,"fb":5},{"n":"Barres de protéine maison","e":"🍫","t":15,"srv":4,"i":["flocon avoine","proteine en poudre","beurre de cacahuete","stevia","vanille","lait d amande","chocolat noir"],"q":["1 tasse","1 dose","1 c. à s.","1/2 c. à s.","1/2 c. à thé","1/2 tasse","20 g brisures"],"d":"Fini les barres du commerce pleines d'additifs. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mixe le gruau en farine au mélangeur.","Ajoute le reste des ingrédients et mélange bien avec les mains.","Étale dans un plat chemisé de papier parchemin.","Réfrigère quelques heures et coupe en 4 barres."],"tags":["collation","protéiné","sucré","végé"],"kcal":180,"p":15,"c":18,"fb":2},{"n":"Cups Reese au yogourt grec","e":"🧁","t":15,"srv":9,"i":["yaourt grec","proteine en poudre","poudre de cacahuete","chocolat noir"],"q":["2 tasses (0 %)","2 doses","4 c. à s.","2 carrés"],"d":"Le goût des Reese, une fraction des calories. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mélange yogourt grec et protéine en poudre.","Répartis dans 9 moules à muffins.","Prépare la poudre de cacahuète avec un peu d'eau et déposes-en sur chaque cup.","Fais fondre le chocolat par intervalles de 30 s, nappe chaque cup.","Congèle jusqu'à ce que ce soit ferme."],"tags":["collation","protéiné","sucré","végé"],"kcal":75,"p":12,"c":5,"fb":1},{"n":"Dip ranch au cottage","e":"🥕","t":8,"srv":2,"i":["fromage cottage","assaisonnement ranch","crudités"],"q":["200 g (ou yogourt grec 2 %)","1 c. à s.","à volonté"],"d":"Le dip ranch crémeux, version haute protéine. (adapté du coffret Togetfit × Nova Pharma)","steps":["Mixe le fromage cottage au robot jusqu'à texture lisse.","Ajoute l'assaisonnement ranch et mélange bien.","Sers avec des légumes à volonté."],"tags":["sauce","collation","protéiné","léger","rapide","végé"],"kcal":206,"p":25,"c":10,"fb":3},{"n":"Muffins double chocolat","e":"🧁","t":25,"srv":10,"i":["banane","oeuf","sirop d érable","lait d amande","vanille","flocon avoine","cacao","bicarbonate","poudre à pâte","chocolat noir"],"q":["3 mûres","2","1/4 tasse","1/2 tasse","1 c. à thé","2 tasses","1/2 tasse non sucré","1 c. à thé","1/2 c. à thé","1/2 tasse"],"d":"Des muffins choco mixés au blender, sans farine. (adapté du coffret Togetfit × Nova Pharma)","steps":["Préchauffe le four à 180 °C (350 °F).","Mets tous les ingrédients (sauf les brisures) au mélangeur ~2 min, jusqu'à une pâte lisse.","Répartis dans 10 moules à muffins et parsème de chocolat.","Cuis environ 15 min (test du cure-dent)."],"tags":["sucré","collation","végé"],"kcal":170,"p":5,"c":30,"fb":4},{"n":"Mayo épicée légère (ma version)","e":"🌶️","t":5,"srv":4,"i":["yaourt grec","sriracha","paprika fumé","ail","citron"],"q":["100 g","1-2 c. à thé","1/2 c. à thé","1/2 gousse pressée","un trait"],"d":"Ma version maison de la mayo épicée évoquée dans le coffret Togetfit : base yogourt, zéro mayo.","steps":["Mélange le yogourt grec avec la sriracha (dose selon ta tolérance).","Ajoute paprika fumé, ail pressé et un trait de citron.","Laisse reposer 10 min au frais pour que les saveurs se lient."],"tags":["sauce","léger","rapide","végé"],"kcal":25,"p":3,"c":2,"fb":0},{"n":"Sauce Big Mac allégée (ma version)","e":"🍔","t":5,"srv":4,"i":["yaourt grec","cornichon","moutarde","ketchup","oignon","paprika"],"q":["100 g","1 haché fin","1 c. à thé","1 c. à s.","1 c. à s. haché fin","1 pincée"],"d":"Ma version maison de la fameuse sauce, montée sur yogourt grec.","steps":["Mélange le yogourt avec moutarde et ketchup.","Incorpore cornichon et oignon hachés très fin.","Ajoute le paprika, poivre, et laisse reposer 10 min au frais."],"tags":["sauce","léger","rapide","végé"],"kcal":30,"p":2,"c":4,"fb":0}];
 // Charge recettes.json s'il existe à côté de index.html (remplace la base intégrée)
 fetch("recettes.json",{cache:"no-store"})
   .then(r=>r.ok?r.json():null)
@@ -1941,7 +1994,12 @@ function allRecipes(){
   return RECIPES.map(r=>Object.assign({},r))
     .concat((D.myRecipes||[]).map(r=>Object.assign({},r,{custom:true})));
 }
-function normTxt(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/s\b/g,"").trim();}
+function normTxt(s){
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/yogourt/g,"yaourt")          // alias québécois
+    .replace(/\bgruau\b/g,"flocon avoine") // alias québécois
+    .replace(/s\b/g,"").trim();
+}
 function ingOwned(ing){
   const b=normTxt(ing);
   return(D.shopping||[]).some(it=>{
@@ -1957,17 +2015,26 @@ function addShopNamed(name){
 function viewRecipe(idx){
   const r=allRecipes()[idx];if(!r)return;
   $("zone-dialog-body").innerHTML='<h3 style="font-size:20px;margin-bottom:2px">'+(r.e?r.e+" ":"")+esc(r.n)+(r.custom?' <span class="badge ok">Ma recette</span>':"")+'</h3>'+
-    '<p class="sub" style="margin-bottom:12px">'+(r.t?"Environ "+r.t+" minutes":"")+'</p>'+
-    '<div class="eyebrow">Ingrédients</div>'+
-    r.i.map(ing=>{
+    '<p class="sub" style="margin-bottom:6px">'+(r.t?"Environ "+r.t+" minutes":"")+'</p>'+
+    ((r.tags&&r.tags.length)?'<div style="margin-bottom:8px">'+r.tags.map(t=>'<span class="chip" style="font-size:11px">'+esc(t)+'</span>').join("")+'</div>':"")+
+    (r.kcal?'<div style="margin-bottom:10px">'+macroChips(r)+'<div class="meta" style="margin-top:4px">Estimation par portion</div></div>':"")+
+    ((r.d&&r.steps&&r.steps.length)?'<p class="meta" style="margin-bottom:12px">'+esc(r.d)+'</p>':"")+
+    '<div class="eyebrow">Ingrédients'+(r.srv?' · '+r.srv+' portion'+(r.srv>1?'s':'')+'':'')+'</div>'+
+    r.i.map((ing,ii)=>{
       const ok=ingOwned(ing);
-      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      const qty=(r.q&&r.q[ii])?'<span class="meta" style="white-space:nowrap;font-variant-numeric:tabular-nums">'+esc(r.q[ii])+'</span>':"";
+      return'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
         '<span style="'+(ok?"":"color:var(--muted)")+'">'+(ok?"✓ ":"· ")+esc(ing)+'</span>'+
-        (ok?"":'<button class="btn ghost small" onclick="addShopNamed(\''+esc(ing).replace(/'/g,"\\'")+'\');viewRecipe('+idx+')">＋ liste</button>')+'</div>';
+        '<span style="display:flex;align-items:center;gap:9px">'+qty+
+        (ok?"":'<button class="btn ghost small" onclick="addShopNamed(\''+esc(ing).replace(/'/g,"\\'")+'\');viewRecipe('+idx+')">＋ liste</button>')+'</span></div>';
     }).join("")+
-    '<div class="eyebrow mt">Préparation</div><p style="font-size:14px;line-height:1.6">'+esc(r.d||"")+'</p>'+
+    '<div class="eyebrow mt">Préparation</div>'+
+    ((r.steps&&r.steps.length)
+      ?'<ol style="padding-left:20px;font-size:14px;line-height:1.6;display:flex;flex-direction:column;gap:7px;margin:4px 0 0">'+r.steps.map(s=>'<li>'+esc(s)+'</li>').join("")+'</ol>'
+      :'<p style="font-size:14px;line-height:1.6">'+esc(r.d||"")+'</p>')+
     '<div class="mt" style="display:flex;gap:10px;flex-wrap:wrap">'+
     '<button class="btn ghost" onclick="document.getElementById(\'zone-dialog\').close()">Fermer</button>'+
+    '<button class="btn ghost" onclick="toggleFav(null,\''+recipeKey(r).replace(/'/g,"\\'")+'\');viewRecipe('+idx+')">'+(isFav(r)?"❤ Retirer des favoris":"🤍 Ajouter aux favoris")+'</button>'+
     (r.custom?'<button class="btn danger" onclick="delMyRecipe(\''+r.id+'\')">Supprimer cette recette</button>':"")+
     '</div>';
   $("zone-dialog").showModal();
@@ -1977,15 +2044,22 @@ function addMyRecipe(){
   if(!n)return toast("Donne un nom à ta recette.");
   const ings=$("mr-ings").value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean);
   if(!ings.length)return toast("Indique au moins un ingrédient (séparés par des virgules).");
+  const tags=$("mr-tags").value.split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
   (D.myRecipes=D.myRecipes||[]).push({
     id:uid(),n,
     e:$("mr-emoji").value.trim()||"🍽️",
     t:parseInt($("mr-time").value)||null,
     i:ings,
-    d:$("mr-steps").value.trim()
+    d:(function(){const L=$("mr-steps").value.split(/\n/).map(x=>x.trim()).filter(Boolean);return L.length>1?"":L.join("");})(),
+    steps:(function(){const L=$("mr-steps").value.split(/\n/).map(x=>x.trim()).filter(Boolean);return L.length>1?L:undefined;})(),
+    tags:tags.length?tags:undefined,
+    kcal:parseInt($("mr-kcal").value)||undefined,
+    p:parseInt($("mr-p").value)||undefined,
+    c:parseInt($("mr-c").value)||undefined,
+    fb:parseInt($("mr-fb").value)||undefined
   });
   save();
-  $("mr-name").value="";$("mr-emoji").value="";$("mr-time").value="";$("mr-ings").value="";$("mr-steps").value="";
+  $("mr-name").value="";$("mr-emoji").value="";$("mr-time").value="";$("mr-ings").value="";$("mr-steps").value="";$("mr-tags").value="";$("mr-kcal").value="";$("mr-p").value="";$("mr-c").value="";$("mr-fb").value="";
   renderRecipes();
   toast("Recette « "+n+" » ajoutée ✓");
 }
@@ -1996,27 +2070,72 @@ function delMyRecipe(id){
   save();renderRecipes();
   $("zone-dialog").close();
 }
+let activeRecipeTag=null;
+let recipeSearch="";
+function setRecipeTag(t){activeRecipeTag=activeRecipeTag===t?null:t;renderRecipes();}
+function recipeKey(r){return r.custom?r.id:"b:"+r.n;}
+function isFav(r){return(D.favRecipes||[]).includes(recipeKey(r));}
+function toggleFav(ev,key){
+  if(ev)ev.stopPropagation();
+  D.favRecipes=D.favRecipes||[];
+  const i=D.favRecipes.indexOf(key);
+  if(i>=0)D.favRecipes.splice(i,1);else D.favRecipes.push(key);
+  save();renderRecipes();
+}
+function macroChips(r,small){
+  if(!r.kcal)return"";
+  const fs=small?"font-size:10.5px;padding:2px 7px":"";
+  return'<div style="display:flex;gap:5px;flex-wrap:wrap">'+
+    '<span class="mch" style="background:rgba(255,197,130,.13);color:#FFC582;'+fs+'">'+r.kcal+' kcal</span>'+
+    (r.p!=null?'<span class="mch" style="background:rgba(255,122,162,.13);color:#FF9DBB;'+fs+'">P '+r.p+' g</span>':"")+
+    (r.c!=null?'<span class="mch" style="background:rgba(108,140,255,.13);color:#9FB4FF;'+fs+'">G '+r.c+' g</span>':"")+
+    (r.fb!=null?'<span class="mch" style="background:rgba(74,222,158,.13);color:#7BEDBB;'+fs+'">Fi '+r.fb+' g</span>':"")+
+    '</div>';
+}
+function borderClass(r){
+  if(r.kcal){
+    if(r.p!=null&&r.p*4/r.kcal>=0.28)return"prot";
+    if(r.kcal<=250)return"light";
+    if(r.c!=null&&r.c*4/r.kcal>=0.55)return"carb";
+    return"";
+  }
+  const tg=r.tags||[];
+  if(tg.includes("protéiné"))return"prot";
+  if(tg.includes("léger"))return"light";
+  if(tg.includes("sucré"))return"carb";
+  return"";
+}
 function renderRecipes(){
   const el=$("recipe-list");if(!el)return;
   const arr=allRecipes();
-  const items=D.shopping||[];
-  if(!items.length){el.innerHTML='<p class="empty">Ajoute des ingrédients à ta liste pour voir des idées de recettes.</p>';}
-  else{
-    const scored=arr.map((r,idx)=>{
-      const owned=r.i.filter(ingOwned);
-      return{idx,r,owned,score:owned.length,missing:r.i.filter(x=>!owned.includes(x))};
-    }).filter(x=>x.score>0).sort((a,b)=>b.score-a.score||a.missing.length-b.missing.length).slice(0,6);
-    el.innerHTML=scored.length?scored.map(x=>
-      '<div class="list-item"><div style="flex:1">'+
-      '<b>'+(x.r.e?x.r.e+" ":"")+esc(x.r.n)+'</b> <span class="meta">· '+(x.r.t?x.r.t+" min · ":"")+x.score+"/"+x.r.i.length+' ingrédients</span>'+(x.r.custom?' <span class="badge ok">perso</span>':"")+
-      '<div class="mt8">'+
-      x.owned.map(i=>'<span class="chip" style="background:rgba(74,222,158,.13);color:#7BEDBB">✓ '+esc(i)+'</span>').join("")+
-      x.missing.map(i=>'<span class="chip" style="background:rgba(255,255,255,.06);color:var(--muted);cursor:pointer" onclick="addShopNamed(\''+esc(i).replace(/'/g,"\\'")+'\')" title="Ajouter à la liste">＋ '+esc(i)+'</span>').join("")+
-      '</div></div>'+
-      '<button class="btn ghost small" onclick="viewRecipe('+x.idx+')">Voir</button></div>'
-    ).join(""):'<p class="empty">Aucune recette ne correspond encore — ajoute par exemple poulet, œufs, riz ou des légumes.</p>';
+  const tagbar=$("recipe-tagbar");
+  if(tagbar){
+    const tags=[...new Set(arr.flatMap(r=>r.tags||[]))].sort();
+    if(activeRecipeTag&&activeRecipeTag!=="__fav"&&!tags.includes(activeRecipeTag))activeRecipeTag=null;
+    const chip=(key,label)=>'<button type="button" class="chip" style="border:none;cursor:pointer;'+
+      (activeRecipeTag===key?'background:var(--grad);color:#fff':'background:rgba(255,255,255,.06);color:var(--muted)')+
+      '" onclick="setRecipeTag(\''+key+'\')">'+label+'</button>';
+    tagbar.innerHTML=chip("__fav","❤ Favoris")+tags.map(t=>chip(esc(t),esc(t))).join("");
   }
-  // Mes recettes (toujours listées)
+  const q=normTxt(recipeSearch||"");
+  let list=arr.map((r,idx)=>{
+    const owned=r.i.filter(ingOwned);
+    return{idx,r,owned,score:owned.length};
+  });
+  if(activeRecipeTag==="__fav")list=list.filter(x=>isFav(x.r));
+  else if(activeRecipeTag)list=list.filter(x=>(x.r.tags||[]).includes(activeRecipeTag));
+  if(q)list=list.filter(x=>normTxt(x.r.n).includes(q)||x.r.i.some(i=>normTxt(i).includes(q)));
+  list.sort((a,b)=>(isFav(b.r)-isFav(a.r))||(b.score-a.score)||a.r.n.localeCompare(b.r.n));
+  el.innerHTML=list.length?list.map(x=>{
+    const r=x.r,fav=isFav(r);
+    return'<div class="rcard '+borderClass(r)+'" onclick="viewRecipe('+x.idx+')">'+
+      '<div class="rcard-head"><span class="rcard-title">'+(r.e?r.e+" ":"")+esc(r.n)+(r.custom?' <span class="badge ok">perso</span>':"")+'</span>'+
+      '<button type="button" class="fav-btn'+(fav?" on":"")+'" onclick="toggleFav(event,\''+recipeKey(r).replace(/'/g,"\\'")+'\')" aria-label="Favori">❤</button></div>'+
+      '<div class="meta" style="font-size:12px">'+(r.t?r.t+" min · ":"")+x.score+"/"+r.i.length+" ingrédients de ta liste"+
+      ((r.tags&&r.tags.length)?" · "+r.tags.map(esc).join(", "):"")+'</div>'+
+      macroChips(r,true)+
+      '</div>';
+  }).join(""):'<p class="empty">'+(q||activeRecipeTag?"Aucune recette ne correspond à ta recherche ou ton filtre.":"Aucune recette disponible.")+'</p>';
   const mineEl=$("my-recipes");
   if(mineEl){
     const base=RECIPES.length;
@@ -2101,7 +2220,7 @@ function importJSON(){
     try{
       const obj=JSON.parse(reader.result);
       if(!obj.weights||!obj.sessions)throw new Error();
-      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]},obj);
+      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]},obj);
       save();renderAll();toast("Sauvegarde restaurée ✓");
     }catch(e){toast("Fichier invalide — vérifie qu'il s'agit bien d'un export Silhouette.");}
   };
@@ -2110,7 +2229,7 @@ function importJSON(){
 async function resetAll(){
   if(!confirm("Tout effacer définitivement ? Cette action est irréversible."))return;
   D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[]};
+     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]};
   save();renderAll();toast("Données effacées.");
 }
 
