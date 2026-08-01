@@ -411,6 +411,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <div class="hstat"><div class="hs-lbl">Poids actuel</div><div class="hs-val" id="dash-weight">—</div><div class="delta" id="dash-weight-delta"></div></div>
       <div class="hstat"><div class="hs-lbl">Reste à perdre</div><div class="hs-val" id="dash-remaining">—</div><div class="delta flat" id="dash-pace"></div></div>
       <div class="hstat"><div class="hs-lbl">IMC</div><div class="hs-val" id="dash-imc">—</div><div class="delta flat" id="dash-imc-cat"></div></div>
+      <div class="hstat" id="dash-bf-wrap" style="display:none"><div class="hs-lbl">Masse grasse</div><div class="hs-val" id="dash-bf">—</div><div class="delta flat" id="dash-bf-delta"></div></div>
     </div>
     <div class="hero-foot"><span id="hero-start">Départ : —</span>
       <span class="unit-switch" role="group" aria-label="Unité de poids">
@@ -502,10 +503,13 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
       <div class="row">
         <div><label>Date</label><input type="date" id="w-date"></div>
         <div><label id="lbl-w">Poids (kg)</label><input type="number" step="0.1" id="w-kg" placeholder="72.4"></div>
+        <div style="max-width:150px"><label>Masse grasse % <span style="text-transform:none">(opt.)</span></label><input type="number" step="0.1" min="1" max="70" id="w-bf" placeholder="32.9"></div>
       </div>
       <div class="mt8"><label>Note (optionnel)</label><input type="text" id="w-note" placeholder="Après le sport, repas copieux la veille…"></div>
       <button class="btn mt" onclick="addWeight()">Ajouter</button>
       <div class="chart-wrap mt" id="poids-chart"></div>
+      <div class="eyebrow mt" id="bf-chart-title" style="display:none">Masse grasse (%)</div>
+      <div class="chart-wrap" id="bf-chart"></div>
     </div>
     <div class="card">
       <h3>Historique</h3>
@@ -881,7 +885,7 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.12";
+const APP_VERSION="2.14";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
@@ -1125,7 +1129,7 @@ function sparkline(points){
 
 /* ───────────────────────── Tableau de bord ───────────────────────── */
 function refWeight(ws){
-  if(D.refId){const r=ws.find(w=>w.id===D.refId);if(r)return r;}
+  if(D.refId){const r=ws.find(w=>w.id===D.refId);if(r&&r.kg!=null)return r;}
   return ws.length?ws[0]:null;
 }
 function setRef(id){
@@ -1138,7 +1142,7 @@ function setUnit(u){
   toast(u==="lb"?"Affichage en livres (lb) — les données restent stockées en kg.":"Affichage en kilogrammes (kg).");
 }
 function renderDash(){
-  const s=D.settings,ws=sortedWeights();
+  const s=D.settings,wsAll=sortedWeights(),ws=wsAll.filter(w=>w.kg!=null);
   document.querySelectorAll(".unit-switch button").forEach(b=>b.classList.toggle("active",b.dataset.u===(unitLb()?"lb":"kg")));
   const U=unitLbl();
   if($("lbl-quick"))$("lbl-quick").textContent="Poids du jour ("+U+")";
@@ -1179,6 +1183,15 @@ function renderDash(){
     $("dash-imc").textContent=(Math.round(imc*10)/10).toLocaleString("fr-FR");
     $("dash-imc-cat").textContent="Indicateur général";
   }else{$("dash-imc").textContent="—";$("dash-imc-cat").textContent="Renseigne ta taille";}
+  const bfList=wsAll.filter(x=>x.bf!=null);
+  const bfWrap=$("dash-bf-wrap");
+  if(bfList.length){
+    bfWrap.style.display="block";
+    const curBf=bfList[bfList.length-1].bf;
+    $("dash-bf").innerHTML=curBf.toLocaleString("fr-FR")+'<span class="unit"> %</span>';
+    const refBf=(first&&first.bf!=null)?first.bf:bfList[0].bf;
+    $("dash-bf-delta").innerHTML=bfList.length>1?deltaHTML(curBf-refBf,"pt"):('<span class="delta flat">'+(Math.round(curBf/100*eff*10)/10).toLocaleString("fr-FR")+" "+unitLbl()+" de gras estimés</span>");
+  }else bfWrap.style.display="none";
   if(eff!=null&&s.targetWeight!=null){
     const rem=eff-s.targetWeight;
     $("dash-remaining").innerHTML=(rem<=0?"Atteint 🎉":(Math.round(kg2disp(rem)*10)/10).toLocaleString("fr-FR",{minimumFractionDigits:1})+'<span class="unit"> '+unitLbl()+'</span>');
@@ -1384,18 +1397,24 @@ function quickAddWeight(){
 }
 
 /* ───────────────────────── Poids ───────────────────────── */
-function upsertWeight(date,kg,note){
+function upsertWeight(date,kg,note,bf){
   const ex=D.weights.find(w=>w.date===date);
-  if(ex){ex.kg=kg;if(note)ex.note=note;}
-  else D.weights.push({id:uid(),date,kg,note:note||""});
+  const okBf=bf!=null&&!isNaN(bf)&&bf>0;
+  if(ex){if(kg!=null)ex.kg=kg;if(note)ex.note=note;if(okBf)ex.bf=bf;}
+  else D.weights.push({id:uid(),date,kg:kg!=null?kg:undefined,note:note||"",bf:okBf?bf:undefined});
   save();
 }
 function addWeight(){
   const date=$("w-date").value||todayStr();
-  const kg=disp2kg(parseFloat($("w-kg").value));
-  if(!kg||kg<=0)return toast("Entre un poids valide.");
-  upsertWeight(date,Math.round(kg*100)/100,$("w-note").value.trim());
-  $("w-kg").value="";$("w-note").value="";
+  const kgRaw=$("w-kg").value.trim();
+  const kg=kgRaw?disp2kg(parseFloat(kgRaw)):null;
+  const bf=parseFloat($("w-bf").value);
+  const okKg=kg!=null&&!isNaN(kg)&&kg>0;
+  const okBf=!isNaN(bf)&&bf>0;
+  if(kgRaw&&!okKg)return toast("Poids invalide.");
+  if(!okKg&&!okBf)return toast("Entre au moins un poids ou une masse grasse.");
+  upsertWeight(date,okKg?Math.round(kg*100)/100:null,$("w-note").value.trim(),bf);
+  $("w-kg").value="";$("w-note").value="";$("w-bf").value="";
   toast("Pesée ajoutée ✓");renderAll();
 }
 function delWeight(id){
@@ -1428,8 +1447,12 @@ function showNote(ev,id){
 function renderPoids(){
   $("w-date").value=$("w-date").value||todayStr();
   const ws=sortedWeights();
-  const svg=lineChart(ws.map(w=>({x:w.date,y:kg2disp(w.kg)})),{target:D.settings.targetWeight!=null?kg2disp(D.settings.targetWeight):null});
+  const svg=lineChart(ws.filter(w=>w.kg!=null).map(w=>({x:w.date,y:kg2disp(w.kg)})),{target:D.settings.targetWeight!=null?kg2disp(D.settings.targetWeight):null});
   $("poids-chart").innerHTML=svg||"";
+  const bfPts=ws.filter(w=>w.bf!=null).map(w=>({x:w.date,y:w.bf}));
+  const bfSvg=bfPts.length>=2?lineChart(bfPts,{}):null;
+  $("bf-chart-title").style.display=bfSvg?"block":"none";
+  $("bf-chart").innerHTML=bfSvg||"";
   const rev=[...ws].reverse();
   $("poids-list").innerHTML=rev.length?'<p class="meta" style="margin-bottom:10px">📍 = point de comparaison du dashboard. Épingle une pesée pour repartir de là (reprise de poids, nouvelle phase…) ; re-clique pour revenir à la plus ancienne.</p><table><tr><th>Date</th><th>Poids</th><th>Δ</th><th>Note</th><th></th></tr>'+
     rev.map((w,i)=>{
@@ -1437,7 +1460,7 @@ function renderPoids(){
       const isRef=D.refId===w.id;
       return"<tr"+(isRef?' style="background:rgba(176,124,255,.08)"':"")+"><td>"+fmtDate(w.date)+
         (w.note?'<button type="button" class="note-ico" onclick="showNote(event,\''+w.id+'\')" aria-label="Voir la note">💬</button>':"")+
-        "</td><td><b>"+fmtKg(w.kg)+"</b></td><td>"+(prev?deltaHTML(kg2disp(w.kg-prev.kg),unitLbl()):"")+
+        "</td><td>"+(w.kg!=null?"<b>"+fmtKg(w.kg)+"</b>":'<span class="meta">—</span>')+(w.bf!=null?' <span class="meta" style="white-space:nowrap">· '+w.bf.toLocaleString("fr-FR")+' %</span>':"")+"</td><td>"+((prev&&w.kg!=null&&prev.kg!=null)?deltaHTML(kg2disp(w.kg-prev.kg),unitLbl()):"")+
         '</td><td class="note-cell">'+esc(w.note||"")+'</td><td style="white-space:nowrap"><button class="btn '+(isRef?"":"ghost ")+'small" onclick="setRef(\''+w.id+'\')" title="'+(isRef?"Revenir à la pesée la plus ancienne":"Définir comme point de comparaison")+'">📍</button> <button class="btn danger small" onclick="delWeight(\''+w.id+'\')">✕</button></td></tr>';
     }).join("")+"</table>":'<p class="empty">Aucune pesée pour l\'instant.</p>';
 }
@@ -1772,7 +1795,7 @@ function togglePhotoSel(id){
   renderPhotos();
 }
 function weightAt(date){
-  const ws=sortedWeights();if(!ws.length)return null;
+  const ws=sortedWeights().filter(w=>w.kg!=null);if(!ws.length)return null;
   let best=null,bd=Infinity;
   ws.forEach(w=>{const d=Math.abs(new Date(w.date)-new Date(date));if(d<bd){bd=d;best=w;}});
   return bd<=7*864e5?best:null;
@@ -1852,7 +1875,7 @@ function renderCalc(fromInput){
     c.goal=parseInt($("cc-goal").value)||0;
     save();
   }
-  const ws=sortedWeights();
+  const ws=sortedWeights().filter(x=>x.kg!=null);
   const w=ws.length?ws[ws.length-1].kg:D.settings.startWeight;
   const hgt=D.settings.heightCm;
   $("cc-basis").textContent=(w&&hgt)?("Base utilisée : "+fmtKg(w)+" (dernière pesée) · "+hgt+" cm"):"Renseigne ta taille dans ⚙ Réglages et enregistre au moins une pesée.";
