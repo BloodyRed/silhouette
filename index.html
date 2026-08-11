@@ -720,6 +720,7 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
   <div class="subnav">
     <button data-sub="courses" class="active">🛒 Courses</button>
     <button data-sub="recettes">🍽️ Recettes</button>
+    <button data-sub="assiette">🥗 Assiette</button>
     <button data-sub="calories">🔥 Calories</button>
   </div>
   <div id="sub-courses" class="subpage active">
@@ -782,6 +783,31 @@ dialog::backdrop{background:rgba(8,6,14,.7);backdrop-filter:blur(4px)}
         <p class="meta mt8">Astuce : tu peux aussi éditer le fichier <b style="color:var(--txt)">recettes.json</b> à côté de ton index.html pour modifier la base de suggestions.</p>
       </div>
     </details>
+  </div>
+
+  <div id="sub-assiette" class="subpage">
+    <p class="sub">Compose ton repas et vérifie en un coup d'œil s'il est équilibré : protéines, glucides, bons lipides et fibres/légumes.</p>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Mon assiette</h3>
+        <div class="row">
+          <div><label>Ajouter un aliment</label><input type="text" id="meal-input" placeholder="Poulet, riz brun, brocoli…" onkeydown="if(event.key==='Enter')addMealItem()"></div>
+          <div style="flex:none"><button class="btn" onclick="addMealItem()">Ajouter</button></div>
+        </div>
+        <div class="eyebrow mt">Ajout rapide</div>
+        <div id="meal-quick"></div>
+        <div class="eyebrow mt">Dans l'assiette</div>
+        <div id="meal-items"><p class="empty">Ton assiette est vide.</p></div>
+        <button class="btn ghost small mt" onclick="clearMeal()">Vider l'assiette</button>
+      </div>
+      <div class="card">
+        <div class="eyebrow">Verdict</div>
+        <div class="bignum" id="meal-verdict" style="font-size:24px">—</div>
+        <div class="delta flat" id="meal-verdict-sub"></div>
+        <div class="mt" id="meal-cats"></div>
+        <p class="meta mt">Repère : l'assiette équilibrée ≈ ½ légumes, ¼ protéines, ¼ glucides (idéalement complets) et un peu de bons lipides. Touche un aliment non reconnu pour le classer toi-même.</p>
+      </div>
+    </div>
   </div>
 
   <div id="sub-calories" class="subpage">
@@ -885,11 +911,11 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.14";
+const APP_VERSION="2.15";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]};
+       weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[],foodCats:{}};
 let storageOK=false;
 
 /* Stockage local : Claude storage → localStorage (hors Claude) → mémoire */
@@ -996,7 +1022,7 @@ async function cloudPull(silent,force){
       if(silent&&remoteT<=localT){renderCloud();return;} // rien de plus récent
       if(!silent&&remoteT<localT&&!confirm("Les données du cloud sont plus anciennes que celles de cet appareil. Les récupérer quand même ?")){renderCloud();return;}
     }
-    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]},remote);
+    D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[],foodCats:{}},remote);
     saveLocal();
     C.lastSync=new Date().toISOString();C.linked=true;persistCloudCfg();
     renderAll();
@@ -1861,6 +1887,115 @@ async function hydratePhotos(){
   if(compareSel.length===2)renderCompare();
 }
 
+/* ───────────────────────── Assiette équilibrée ───────────────────────── */
+// Catégories : p = protéines, g = glucides, l = bons lipides, f = fibres/légumes
+const FOOD_CATS=[
+["poulet","p"],["dinde","p"],["boeuf","p"],["porc","p"],["jambon","p"],["viande","p"],
+["oeuf","p"],["blanc d oeuf","p"],["thon","p"],["poisson","p"],["cabillaud","p"],["tilapia","p"],
+["saumon","pl"],["truite","pl"],["sardine","pl"],["maquereau","pl"],["crevette","p"],
+["tofu","p"],["tempeh","pf"],["seitan","p"],["proteine en poudre","p"],
+["yaourt grec","p"],["fromage cottage","p"],["fromage","p"],["skyr","p"],["lait","pg"],["boisson de soja","p"],
+["lentille","pgf"],["pois chiche","pgf"],["haricot rouge","pgf"],["haricot noir","pgf"],["edamame","pf"],["legumineuse","pgf"],
+["riz brun","gf"],["riz","g"],["pate complete","gf"],["pate","g"],["pain complet","gf"],["pain","g"],
+["patate douce","gf"],["patate","g"],["pomme de terre","g"],["quinoa","pgf"],
+["flocon avoine","gf"],["couscous","g"],["orge","gf"],["tortilla","g"],["bagel","g"],["muffin anglais","g"],["craquelin","g"],
+["banane","gf"],["pomme","gf"],["orange","gf"],["fraise","gf"],["framboise","gf"],["bleuet","gf"],["fruit rouge","gf"],["fruit","gf"],["raisin","g"],["mangue","gf"],["granola","gl"],
+["avocat","lf"],["noix","lf"],["amande","lf"],["cacahuete","l"],["arachide","l"],
+["beurre de cacahuete","l"],["beurre d amande","l"],["beurre de noix","l"],
+["graine de chia","lf"],["graine de lin","lf"],["graine de courge","l"],["graine","lf"],
+["huile olive","l"],["huile d olive","l"],["huile d avocat","l"],["olive","l"],
+["puree de sesame","l"],["tahini","l"],["pistache","lf"],["noisette","l"],
+["brocoli","f"],["epinard","f"],["salade","f"],["laitue","f"],["carotte","f"],["tomate","f"],
+["concombre","f"],["courgette","f"],["poivron","f"],["haricot vert","f"],["chou-fleur","f"],["chou","f"],
+["champignon","f"],["oignon","f"],["celeri","f"],["asperge","f"],["betterave","f"],
+["mais","gf"],["petit pois","gf"],["legume","f"],["crudite","f"],["kale","f"],["roquette","f"],["pak choi","f"],["aubergine","f"]
+];
+const MEAL_META={
+  p:{label:"Protéines",color:"#FF7AA2",sugg:"poulet, œufs, poisson, tofu, yogourt grec, légumineuses…"},
+  g:{label:"Glucides (idéalement complets)",color:"#B07CFF",sugg:"riz brun, patate douce, pâtes complètes, gruau, fruits…"},
+  l:{label:"Bons lipides",color:"#6C8CFF",sugg:"avocat, noix, graines, huile d'olive, poisson gras…"},
+  f:{label:"Fibres & légumes",color:"#4ADE9E",sugg:"légumes à volonté, légumineuses, grains entiers, fruits…"}
+};
+let mealItems=[];
+let classifyTarget=null;
+function foodCats(item){
+  const a=normTxt(item);
+  const cats=new Set();
+  if(D.foodCats&&D.foodCats[a]){D.foodCats[a].split("").forEach(c=>cats.add(c));return cats;}
+  FOOD_CATS.forEach(([k,cs])=>{
+    const b=normTxt(k);
+    if(a.includes(b)||b.includes(a))cs.split("").forEach(c=>cats.add(c));
+  });
+  return cats;
+}
+function addMealItem(name){
+  const v=(name||$("meal-input").value).trim();
+  if(!v)return;
+  mealItems.push(v);
+  if(!name)$("meal-input").value="";
+  renderMeal();
+}
+function removeMealItem(i){mealItems.splice(i,1);renderMeal();}
+function clearMeal(){mealItems=[];renderMeal();}
+function classifyFood(item){
+  classifyTarget=normTxt(item);
+  const cur=(D.foodCats&&D.foodCats[classifyTarget])||"";
+  $("zone-dialog-body").innerHTML='<h3 style="font-size:19px;margin-bottom:2px">Classer « '+esc(item)+' »</h3>'+
+    '<p class="sub" style="margin-bottom:14px">Coche les catégories que cet aliment couvre.</p>'+
+    Object.entries(MEAL_META).map(([k,m])=>
+      '<label class="list-item" style="cursor:pointer"><span style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:'+m.color+'"></span>'+m.label+'</span>'+
+      '<input type="checkbox" data-cat="'+k+'" '+(cur.includes(k)?"checked":"")+' style="width:20px;height:20px;accent-color:'+m.color+'"></label>'
+    ).join("")+
+    '<div class="mt" style="display:flex;gap:10px"><button class="btn" onclick="saveFoodCat()">Enregistrer</button>'+
+    '<button class="btn ghost" onclick="document.getElementById(\'zone-dialog\').close()">Annuler</button></div>';
+  $("zone-dialog").showModal();
+}
+function saveFoodCat(){
+  const cats=[...document.querySelectorAll("#zone-dialog-body input[data-cat]:checked")].map(x=>x.dataset.cat).join("");
+  D.foodCats=D.foodCats||{};
+  if(cats)D.foodCats[classifyTarget]=cats;else delete D.foodCats[classifyTarget];
+  save();
+  $("zone-dialog").close();
+  renderMeal();
+  toast(cats?"Aliment classé ✓ (mémorisé pour la prochaine fois)":"Classement retiré.");
+}
+const MEAL_QUICK=["poulet","œufs","saumon","tofu","yogourt grec","légumineuses","riz brun","patate douce","pâtes complètes","avocat","noix","huile d'olive","brocoli","salade","légumes"];
+function renderMeal(){
+  const itemsEl=$("meal-items");if(!itemsEl)return;
+  $("meal-quick").innerHTML=MEAL_QUICK.map(q=>
+    '<button type="button" class="chip" style="border:none;cursor:pointer;background:rgba(255,255,255,.06);color:var(--muted)" onclick="addMealItem(\''+q.replace(/'/g,"\\'")+'\')">＋ '+q+'</button>'
+  ).join("");
+  // Chips de l'assiette
+  itemsEl.innerHTML=mealItems.length?mealItems.map((it,i)=>{
+    const cats=foodCats(it);
+    const unknown=cats.size===0;
+    const dots=[...cats].map(c=>'<span style="width:8px;height:8px;border-radius:50%;background:'+MEAL_META[c].color+';display:inline-block"></span>').join(" ");
+    return'<span class="chip" style="display:inline-flex;align-items:center;gap:7px;font-size:13px;padding:6px 11px;margin:3px;'+
+      (unknown?'background:rgba(255,197,130,.13);color:#FFC582;cursor:pointer':'background:rgba(255,255,255,.06);color:var(--txt)')+'"'+
+      (unknown?' onclick="classifyFood(\''+esc(it).replace(/'/g,"\\'")+'\')" title="Non reconnu — touche pour classer"':"")+'>'+
+      esc(it)+(unknown?" ?":" "+dots)+
+      '<button type="button" onclick="event.stopPropagation();removeMealItem('+i+')" style="background:none;border:none;color:var(--coral);font-size:11px;padding:0 0 0 2px">✕</button></span>';
+  }).join(""):'<p class="empty">Ton assiette est vide.</p>';
+  // Verdict
+  const covered={};
+  Object.keys(MEAL_META).forEach(k=>covered[k]=[]);
+  mealItems.forEach(it=>foodCats(it).forEach(c=>covered[c].push(it)));
+  const nb=Object.keys(MEAL_META).filter(k=>covered[k].length).length;
+  const vd=$("meal-verdict"),vs=$("meal-verdict-sub");
+  if(!mealItems.length){vd.textContent="—";vd.style.color="";vs.textContent="Ajoute les aliments de ton repas.";}
+  else if(nb===4){vd.textContent="Assiette équilibrée ✓";vd.style.color="#4ADE9E";vs.textContent="Les quatre familles sont couvertes — belle assiette !";}
+  else if(nb===3){vd.textContent="Presque !";vd.style.color="#FFC582";vs.textContent="Il ne manque qu'une famille (voir ci-dessous).";}
+  else{vd.textContent="À compléter";vd.style.color="#FF8A7A";vs.textContent="Ton assiette penche d'un côté — regarde ce qui manque.";}
+  $("meal-cats").innerHTML=Object.entries(MEAL_META).map(([k,m])=>{
+    const ok=covered[k].length>0;
+    return'<div style="padding:9px 0;border-bottom:1px solid rgba(255,255,255,.06)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">'+
+      '<span style="display:flex;align-items:center;gap:9px"><span style="width:11px;height:11px;border-radius:3px;background:'+m.color+';flex:none"></span><b>'+m.label+'</b></span>'+
+      '<span style="font-weight:700;color:'+(ok?"#4ADE9E":"var(--muted)")+'">'+(ok?"✓":"–")+'</span></div>'+
+      '<div class="meta" style="margin-top:3px;padding-left:20px">'+(ok?esc(covered[k].join(", ")):"Idées : "+m.sugg)+'</div></div>';
+  }).join("");
+}
+
 /* ───────────────────────── Calculateur de calories ───────────────────────── */
 function calcCfg(){D.settings.calc=D.settings.calc||{};return D.settings.calc;}
 function renderCalc(fromInput){
@@ -2252,7 +2387,7 @@ function importJSON(){
     try{
       const obj=JSON.parse(reader.result);
       if(!obj.weights||!obj.sessions)throw new Error();
-      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]},obj);
+      D=Object.assign({settings:{},weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[],foodCats:{}},obj);
       save();renderAll();toast("Sauvegarde restaurée ✓");
     }catch(e){toast("Fichier invalide — vérifie qu'il s'agit bien d'un export Silhouette.");}
   };
@@ -2261,7 +2396,7 @@ function importJSON(){
 async function resetAll(){
   if(!confirm("Tout effacer définitivement ? Cette action est irréversible."))return;
   D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
-     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[]};
+     weights:[],sessions:[],reminders:[],nsv:[],daily:{},lastFired:{},customZones:[],events:[],weekOverrides:{},shopping:[],photos:[],myRecipes:[],favRecipes:[],foodCats:{}};
   save();renderAll();toast("Données effacées.");
 }
 
@@ -2321,7 +2456,7 @@ window.addEventListener("resize",updateNavFade);
 updateNavFade();
 function renderAll(){
   renderDash();renderWeek();renderPoids();renderMeasureForm();renderZones();renderSessions();
-  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();initCalcInputs();applyDashOrder();
+  renderDayPicker();renderReminders();renderExtras();renderSettings();renderCloud();renderShop();renderPhotos();renderBodyMap();initCalcInputs();renderMeal();applyDashOrder();
 }
 document.getElementById("app-ver").textContent="v"+APP_VERSION;
 document.getElementById("app-ver-full").textContent="Silhouette v"+APP_VERSION+" · build du "+APP_BUILD.split("-").reverse().join("/");
