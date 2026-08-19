@@ -919,7 +919,7 @@ function delZone(id){
 }
 const DAYS=["L","M","M","J","V","S","D"];
 const DAYS_FULL=["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"];
-const APP_VERSION="2.20";
+const APP_VERSION="2.21";
 const APP_BUILD="2026-07-13";
 const KEY="silhouette:data";
 let D={settings:{name:"",heightCm:null,startWeight:null,targetWeight:null,startDate:"",waterGoal:8},
@@ -2189,12 +2189,12 @@ function applyCalcView(){
 function gaugeBar(hPct,color,wPx,solid){
   return'<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:'+wPx+'px;height:'+hPct+'%;border-radius:999px;'+
     (solid?'background:'+color+';box-shadow:0 0 10px '+color+'55;':'border:3px solid '+color+';background:'+color+'1f;')+'">'+
-    '<span style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:13px;height:13px;border-radius:50%;background:'+color+';box-shadow:0 0 8px '+color+'88"></span></div>';
+    '<span style="position:absolute;top:-5px;left:50%;transform:translateX(-50%);width:9px;height:9px;border-radius:50%;background:'+color+';box-shadow:0 0 7px '+color+'88"></span></div>';
 }
 function gaugeRow(label,color,desc,val){
-  return'<div><div style="display:flex;align-items:center;gap:8px"><span style="width:11px;height:11px;border-radius:50%;background:'+color+';flex:none"></span><b style="color:'+color+'">'+label+'</b></div>'+
-    '<div class="meta" style="margin:2px 0 3px;padding-left:19px">'+desc+'</div>'+
-    '<div style="padding-left:19px;font-family:var(--display);font-weight:700;font-size:22px">'+val+'</div></div>';
+  return'<div><div style="display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:50%;background:'+color+';flex:none"></span><b style="color:'+color+'">'+label+'</b></div>'+
+    '<div style="padding-left:17px;margin-top:1px;font-family:var(--display);font-weight:700;font-size:22px;line-height:1.15">'+val+'</div>'+
+    '<div class="meta" style="padding-left:17px;margin-top:1px">'+desc+'</div></div>';
 }
 function renderCalcGauge(maint,target,protG){
   const g=$("cc-view-gauge");if(!g)return;
@@ -2202,7 +2202,7 @@ function renderCalcGauge(maint,target,protG){
   const th=300;
   const hT=Math.max(8,Math.round(target/maint*100));
   const hP=Math.max(8,Math.round((protG*4)/maint*100));
-  g.innerHTML='<div style="display:flex;gap:22px;align-items:stretch">'+
+  g.innerHTML='<div style="display:flex;gap:22px;align-items:stretch;margin-bottom:22px">'+
     '<div style="position:relative;width:30px;height:'+th+'px;flex:none">'+
     gaugeBar(100,"#FFC582",30)+gaugeBar(hT,"#6C8CFF",30)+gaugeBar(hP,"#4ADE9E",30,true)+
     '</div>'+
